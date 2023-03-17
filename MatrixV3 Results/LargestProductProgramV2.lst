@@ -1,0 +1,1594 @@
+Microsoft (R) Macro Assembler Version 14.24.28316.0	    03/29/20 00:15:12
+BDahmer_LargestProductProgram.asm			     Page 1 - 1
+
+
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;; CS340 Assembly Language Course   							   ;;
+				;; Brett Dahmer													   ;;
+				;; Student ID# 00076158											   ;;
+				;; Program: Finds the largest product of four numbers that can be  ;;
+				;; in a (row, column, or diagonally).                              ;;
+				;; Requires: Input file, output file.                              ;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+				INCLUDE Irvine32.inc
+			      C ; Include file for Irvine32.lib             (Irvine32.inc)
+			      C 
+			      C ;OPTION CASEMAP:NONE		; optional: make identifiers case-sensitive
+			      C 
+			      C INCLUDE SmallWin.inc		; MS-Windows prototypes, structures, and constants
+			      C .NOLIST
+			      C .LIST
+			      C 
+			      C INCLUDE VirtualKeys.inc
+			      C ; VirtualKeys.inc
+			      C .NOLIST
+			      C .LIST
+			      C 
+			      C 
+			      C .NOLIST
+			      C .LIST
+			      C 
+
+ 00000000			.data
+				;---Control Characters---;
+ = 00000000			NULL	 EQU 00h         
+ = 0000000A			LF		 EQU 0ah         
+ = 0000000D			CR		 EQU 0dh         
+ = 00000020			SPC 	 EQU 20h
+
+				;---Storage for Numerical Values---;
+ 00000000 0000000A		TEN			dword	10							
+ 00000004 00000002		TWO			dword	2
+
+				;---Input and Output filenames and handles---;
+ 00000008 42 44 61 68 6D	outFN		byte	"BDahmer_ResultsV2.txt", NULL			;output filename.
+	   65 72 5F 52 65
+	   73 75 6C 74 73
+	   56 32 2E 74 78
+	   74 00
+ 0000001E 4D 61 74 72 69	inFN     	byte	"MatrixV2.dat", NULL					;input filename.
+	   78 56 32 2E 64
+	   61 74 00
+ 0000002B 00000000		infile		dword	?										;input file handle, value holder.
+ 0000002F 00000000		outfile		dword	?										;output file handle, value holder.
+
+				;---Strings---;
+ 00000033 3D 3D 3D 3D 3D	fline       byte  "=================================================================", CR, LF, NULL
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   3D 3D 3D 3D 3D
+	   0D 0A 00
+ 00000077 4C 61 72 67 65	Msg0	    byte  "Largest Product of Four Numbers Program Created by: BRETT DAHMER", CR, LF, NULL
+	   73 74 20 50 72
+	   6F 64 75 63 74
+	   20 6F 66 20 46
+	   6F 75 72 20 4E
+	   75 6D 62 65 72
+	   73 20 50 72 6F
+	   67 72 61 6D 20
+	   43 72 65 61 74
+	   65 64 20 62 79
+	   3A 20 42 52 45
+	   54 54 20 44 41
+	   48 4D 45 52 0D
+	   0A 00
+ 000000BA 54 68 69 73 20	MsgV2		byte  "This was calculated using MatrixV2.dat (used [0,0] to [19,19])", CR, LF, NULL
+	   77 61 73 20 63
+	   61 6C 63 75 6C
+	   61 74 65 64 20
+	   75 73 69 6E 67
+	   20 4D 61 74 72
+	   69 78 56 32 2E
+	   64 61 74 20 28
+	   75 73 65 64 20
+	   5B 30 2C 30 5D
+	   20 74 6F 20 5B
+	   31 39 2C 31 39
+	   5D 29 0D 0A 00
+ 000000FB 54 68 69 73 20	MsgV3		byte  "This was calculated using MatrixV3.dat (used [0,0] to [19,19])", CR, LF, NULL
+	   77 61 73 20 63
+	   61 6C 63 75 6C
+	   61 74 65 64 20
+	   75 73 69 6E 67
+	   20 4D 61 74 72
+	   69 78 56 33 2E
+	   64 61 74 20 28
+	   75 73 65 64 20
+	   5B 30 2C 30 5D
+	   20 74 6F 20 5B
+	   31 39 2C 31 39
+	   5D 29 0D 0A 00
+ 0000013C 54 68 65 20 4C	SumMsg1	    byte  "The Largest Product of Four Numbers is: ", NULL
+	   61 72 67 65 73
+	   74 20 50 72 6F
+	   64 75 63 74 20
+	   6F 66 20 46 6F
+	   75 72 20 4E 75
+	   6D 62 65 72 73
+	   20 69 73 3A 20
+	   00
+ 00000165 54 68 65 20 66	NumMsg1		byte  "The four numbers are: ", NULL
+	   6F 75 72 20 6E
+	   75 6D 62 65 72
+	   73 20 61 72 65
+	   3A 20 00
+ 0000017C 54 68 65 20 6C	NumMsg2     byte  "The location of the fourth value is: ",  NULL
+	   6F 63 61 74 69
+	   6F 6E 20 6F 66
+	   20 74 68 65 20
+	   66 6F 75 72 74
+	   68 20 76 61 6C
+	   75 65 20 69 73
+	   3A 20 00
+ 000001A2 41 74 20 4C 6F	RMsg	    byte  "At Location (row ", NULL
+	   63 61 74 69 6F
+	   6E 20 28 72 6F
+	   77 20 00
+ 000001B4 2C 63 6F 6C 75	CMsg		byte  ",column ", NULL
+	   6D 6E 20 00
+ 000001BD  00000008 [		bestStr     byte	 8 dup(?), NULL					;will contain the sum of the best value.
+	    00
+	   ] 00
+
+				;---Format Strings---;
+ 000001C6 0D 0A 00		nline		byte   CR, LF, NULL						;new line string.
+ 000001C9  00000002 [		numStr		byte  2 dup(?), NULL
+	    00
+	   ] 00
+ 000001CC 2C 00			commaStr	byte  ",",NULL
+ 000001CE 29 3A 20 00		colonStr	byte  "): ",NULL
+				;---Storage For Ary1 and Buffer---;
+ 000001D2  00001770 [		BUFF	 	byte	 6000 dup(?), CR, CR			;size of the buffer (might be overkill).
+	    00
+	   ] 0D 0D
+ 00001944  000003E8 [		Ary1		dword    1000 dup(' '), CR				;size of the array.(might be overkill).
+	    00000020
+	   ] 0000000D
+				          
+ 000028E8 00000000		byteCount	dword ?				;stores the total bytes from the Buffer.
+ 000028EC 00000000		valCtr		dword ?				;stores the number of values in Ary1, used as a counter for filling the array.
+
+				;-----Storage for BestSum and position--------------------;
+ 000028F0 00000000		BestSum		dword 0				;store the best Sum value.
+ 000028F4 00000000		sRow		dword 0				;saved row.
+ 000028F8 00000000		sCol		dword 0				;saved column.
+
+				;---Shift Values-----;
+ 000028FC 00000004		nCol		dword 4				;diagonal shifting value.
+ 00002900 00000000		nPos		dword 0				;new position to start on for next product iteration.
+ 00002904 00000050		nRow		dword 80			;row change offset of 12. used for ROW_LR
+ 00002908 00000004		ctr			dword 4				;counter for how many values to add together.
+ 0000290C 00000050		ROW			dword 80			;row OFFSET
+ 00002910 00000004		COL			dword 4				;column OFFSET
+ 00002914 00000000		r_ctr		dword 0				;row ctr.
+ 00002918 00000000		c_ctr		dword 0				;column ctr.
+ 0000291C 00000011		cLimit		dword 17			;bounds 17. 
+ 00002920 00000011		dLimit		dword 17			;bounds 17.
+ 00002924 000005F0		blRow		dword 1520			;bottom left row.
+ 00002928 0000063C		brRow		dword 1596			;bottom right row.
+
+				;---Storing Numbers From Best Product---;
+ 0000292C 00000000		numA		dword NULL			;holds the first number
+ 00002930 00000000		numB		dword NULL			;holds the second number
+ 00002934 00000000		numC		dword NULL			;holds the third number.
+ 00002938 00000000		numD		dword NULL			;holds the fourth number.
+ 00000000			.code
+ 00000000			main PROC
+ 00000000  E8 00000AF4			call ReadFileIntoBuffer				;reads an input file into a buffer.
+
+ 00000005  8D 35 000001D2 R		lea esi, BUFF						;point to buffer
+ 0000000B  8D 3D 00001944 R		lea edi, Ary1						;point to Ary1.
+ 00000011  E8 00000AA2			call FillAry						;fills the array with dword size values from the buffer.
+
+ 00000016  E8 000004B0			call Diagonal_UD_LR					;Diagonal up to down left to right check.
+ 0000001B  E8 00000210			call Reset_ShiftValues				;resetting shift values.
+
+ 00000020  E8 000005FB			call Diagonal_DU_LR					;Diagonal down to up left to right check.
+ 00000025  E8 00000206			call Reset_ShiftValues				;resetting shift values.
+
+ 0000002A  E8 00000763			call Diagonal_DU_RL					;Diagonal down to up right to left check.
+ 0000002F  E8 000001FC			call Reset_ShiftValues				;resetting shift values.
+
+ 00000034  E8 000008CB			call Diagonal_UD_RL					;Diagonal up to down left to right check.
+ 00000039  E8 000001F2			call Reset_ShiftValues				;resetting shift values.
+					
+ 0000003E  E8 0000035A			call Row_LR							;Row from Left to right check goes from index 0 to bounds of array.
+ 00000043  E8 000001E8			call Reset_ShiftValues				;resetting shift values.
+
+ 00000048  E8 0000022A			call Col_LR							;Column from left to right check goes from index 0 to boudns of array (per check).	
+				 
+ 0000004D  E8 00000A96			call OutputFileOpenSetup			;opens output file and sets it up.
+
+ 00000052  E8 00000A3F			call Print_Title					;prints the title to the output file.
+					
+ 00000057  8D 35 000000BA R		lea esi, MsgV2						;swap out to MsgV3 for MatrixV3.dat, when needed
+ 0000005D  E8 00000B17			call PrinttoFile
+					
+ 00000062  E8 00000011			call PrintResults					;prints the values and results to the output file.
+
+ 00000067  A1 0000002F R		mov eax, outfile					;moving handle into eax register for output file.
+ 0000006C  E8 00000000 E		call CloseFile						;closing output file.   
+					
+					invoke ExitProcess, 0
+ 00000071  6A 00	   *	    push   +000000000h
+ 00000073  E8 00000000 E   *	    call   ExitProcess
+ 00000078			main endp
+
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;; PrintResults will print out the results from     ;;
+				;; the calculations performed in the matrix.        ;;
+				;; when finished returns to main procedure.	        ;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 00000078			PrintResults proc
+ 00000078  8D 35 00000033 R		lea esi, fline					;point to format line '==',etc.
+ 0000007E  E8 00000AF6			call PrintToFile				;print to a file.
+
+ 00000083  8D 35 0000013C R		lea esi, SumMsg1				;String for the largest product number.
+ 00000089  E8 00000AEB			call PrintToFile				;print to a file.
+					
+ 0000008E  8D 35 000001BD R		lea esi, bestStr				;point at bestStr (will hold the largest product in ascii form later).
+ 00000094  B9 00000008			mov ecx, 8						;setting blankout counter.
+ 00000099  E8 00000ACF			call BlankOut					;call to blankout to clear the bestStr.
+ 0000009E  A1 000028F0 R		mov eax, BestSum				;moving BestSum into the eax register for ITOA conversion.
+ 000000A3  E8 00000AAC			call ITOA						;Integer to Ascii call.
+					
+ 000000A8  8D 35 000001BD R		lea esi, bestStr				;point to bestStr (holds largest product now in ASCII form).
+ 000000AE  E8 00000AC6			call PrintToFile				;print to a file.
+					
+ 000000B3  8D 35 000001C6 R		lea esi, nline					;point to nline "new line" holds control characters (CR, LF).
+ 000000B9  E8 00000ABB			call PrintToFile				;print to a file.
+						
+ 000000BE  8D 35 00000165 R	    lea esi, NumMsg1				;point to NumMsg1, holds "The four numbers are: ", string.
+ 000000C4  E8 00000AB0			call PrintToFile				;print to a file.
+
+				;first number
+ 000000C9  8D 35 000001C9 R		lea esi, numStr					;point to numStr.
+ 000000CF  B9 00000002			mov ecx, 2						;number of locations to blank.
+ 000000D4  E8 00000A94			call BlankOut					;blanks out an array.
+ 000000D9  A1 0000292C R		mov eax, numA					;move integer into eax register, required for ITOA call.
+ 000000DE  E8 00000A71			call ITOA						;Integer to Ascii call.
+ 000000E3  8D 35 000001C9 R		lea esi, numStr					;points to numStr.
+ 000000E9  E8 00000A8B			call PrintToFile				;prints to a file.
+
+ 000000EE  8D 35 000001CC R		lea esi, commaStr				;points at a comma string ",".
+ 000000F4  E8 00000A80			call PrintToFile				;print to a file.
+
+				;second number
+ 000000F9  8D 35 000001C9 R		lea esi, numStr					;point to numStr.
+ 000000FF  B9 00000002			mov ecx, 2						;number of locations to blank.
+ 00000104  E8 00000A64			call BlankOut					;blanks out an array.
+ 00000109  A1 00002930 R		mov eax, numB					;move integer into eax register, required for ITOA call.
+ 0000010E  E8 00000A41			call ITOA						;Integer to Ascii call.
+ 00000113  8D 35 000001C9 R		lea esi, numStr					;point to numStr.
+ 00000119  E8 00000A5B			call PrintToFile				;prints to a file.
+
+ 0000011E  8D 35 000001CC R		lea esi, commaStr				;points to a comma string.
+ 00000124  E8 00000A50			call PrintToFile				;prints to file.
+
+				;third number
+ 00000129  8D 35 000001C9 R		lea esi, numStr					;point to numStr.
+ 0000012F  B9 00000002			mov ecx, 2						;number of locations to blank.
+ 00000134  E8 00000A34			call BlankOut					;blanks out an array.
+ 00000139  A1 00002934 R		mov eax, numC					;move integer into eax register, required for ITOA call.
+ 0000013E  E8 00000A11			call ITOA						;Integer to Ascii call.
+ 00000143  8D 35 000001C9 R		lea esi, numStr					;point to numStr.
+ 00000149  E8 00000A2B			call PrintToFile				;print to a file
+
+ 0000014E  8D 35 000001CC R		lea esi, commaStr				;points to a comma string.
+ 00000154  E8 00000A20			call PrintToFile				;prints to file.
+
+				;fourth number
+ 00000159  8D 35 000001C9 R		lea esi, numStr					;point to numStr.
+ 0000015F  B9 00000002			mov ecx, 2						;number of locations to blank.
+ 00000164  E8 00000A04			call BlankOut					;blanks out an array.
+ 00000169  A1 00002938 R		mov eax, numD					;move integer into eax register, required for ITOA call.
+ 0000016E  E8 000009E1			call ITOA						;Integer to Ascii call.
+
+ 00000173  8D 35 000001C9 R		lea esi, numStr					;point to numStr.
+ 00000179  E8 000009FB			call PrintToFile				;print to a file.
+
+ 0000017E  8D 35 000001C6 R		lea esi, nline					;point to nline "new line" holds control characters (CR, LF).
+ 00000184  E8 000009F0			call PrintToFile				;print to a file.
+
+ 00000189  8D 35 000001A2 R		lea esi, RMsg					;point to RMsg "At Location (row ".
+ 0000018F  E8 000009E5			call PrintToFile				;print to a file.
+
+ 00000194  8D 35 000001C9 R		lea esi, numStr					;point to numStr.
+ 0000019A  B9 00000002			mov ecx, 2						;number of locations to blank.
+ 0000019F  E8 000009C9			call BlankOut					;blanks out an array.
+ 000001A4  A1 000028F4 R		mov eax, sRow					;move sRow into eax register (holds row of the fourth values location from the best product).
+ 000001A9  E8 000009A6			call ITOA						;Integer to Ascii call.
+ 000001AE  8D 35 000001C9 R		lea esi, numStr					;point to numStr.
+ 000001B4  E8 000009C0			call PrintToFile				;print to a file.
+
+ 000001B9  8D 35 000001B4 R		lea esi, CMsg					;point to CMsg ",column ".
+ 000001BF  E8 000009B5			call PrintToFile				;print to a file.
+
+ 000001C4  8D 35 000001C9 R		lea esi, numStr					;point to numStr
+ 000001CA  B9 00000002			mov ecx, 2						;number of locations to blank.
+ 000001CF  E8 00000999			call BlankOut					;blanks out an array.
+ 000001D4  A1 000028F8 R		mov eax, sCol					;move sCol into eax register (holds column of the fourth values location from the best product).
+ 000001D9  E8 00000976			call ITOA						;Integer to Ascii call.
+ 000001DE  8D 35 000001C9 R		lea esi, numStr					;points to numStr.
+ 000001E4  E8 00000990			call PrintToFile				;prints to file.
+
+ 000001E9  8D 35 000001CE R		lea esi, colonStr				;points to colon string.
+ 000001EF  E8 00000985			call PrintToFile				;prints to file.
+
+ 000001F4  8D 35 000001C9 R		lea esi, numStr					;points at numStr.
+ 000001FA  B9 00000002			mov ecx, 2						;number of locations to blank.
+ 000001FF  E8 00000969			call BlankOut					;blanks out an array.
+ 00000204  A1 00002938 R		mov eax, numD					;move area into eax register, required for ITOA call.
+ 00000209  E8 00000946			call ITOA						;Integer to Ascii call.
+
+ 0000020E  8D 35 000001C9 R		lea esi, numStr					;points at numStr.
+ 00000214  E8 00000960			call PrintToFile				;prints to a file.
+					
+ 00000219  8D 35 000001C6 R		lea esi, nline					;point new line contains control chars.
+ 0000021F  E8 00000955			call PrintToFile				;print to a file.
+					
+ 00000224  8D 35 00000033 R		lea esi, fline					;point to format line contains '==',etc.
+ 0000022A  E8 0000094A			call PrintToFile				;print to a file.
+ 0000022F  C3				ret								;returns to main proc.
+ 00000230			PrintResults endp
+
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;; Reset_ShiftValues will reset values to default   ;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 00000230			Reset_ShiftValues proc
+ 00000230  C7 05 000028FC R		mov nCol, 4						;resetting nCol to 4.
+	   00000004
+ 0000023A  C7 05 00002900 R		mov nPos, NULL					;resetting nPos.
+	   00000000
+ 00000244  C7 05 00002908 R		mov ctr, 4						;resetting ctr back to 4.
+	   00000004
+ 0000024E  C7 05 0000290C R		mov ROW, 80						;moving default value into ROW.
+	   00000050
+ 00000258  C7 05 00002910 R		mov COL, 4						;moving default value into COL.
+	   00000004
+ 00000262  C7 05 00002914 R		mov r_ctr, NULL					;resetting row counter.
+	   00000000
+ 0000026C  C7 05 00002918 R		mov c_ctr, NULL					;resetting column counter.
+	   00000000
+ 00000276  C3				ret								;return to main proc.
+ 00000277			Reset_ShiftValues endp
+
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;; Col_LR UP/DOWN LEFT/RIGHT					    ;;
+				;; Checks columns Up to down from left to right.    ;;
+				;; uses edi.										;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 00000277			Col_LR proc
+ 00000277  33 C0			XOR eax, eax
+ 00000279  FF 35 00002908 R		push ctr
+ 0000027F  8B 0D 00002920 R		mov ecx, dLimit					;move dlimit left-->right into ecx register.
+ 00000285  8B 15 0000291C R		mov edx, cLimit					;move cLimit going down a row into edx register.
+ 0000028B  8D 3D 00001944 R		lea edi, Ary1					;point at Ary1 (THE MATRIX 20x20).
+ 00000291				L00:
+ 00000291  8B 07				mov eax, [edi]				;move value edi is pointing to into eax register.
+ 00000293  FF 0D 00002908 R			dec ctr						;moved one of four values into the eax register (the first value).
+ 00000299				L0:
+ 00000299  03 3D 0000290C R			add edi, ROW				;shift down one row.
+ 0000029F  8B 1F				mov ebx, [edi]				;move value edi pointing to into ebx register.
+ 000002A1  0F AF C3				imul eax, ebx				;multiply values and store in eax register.
+ 000002A4  FF 05 00002914 R			inc r_ctr					;increment row counter (starting is 0).
+ 000002AA  FF 0D 00002908 R			dec ctr						;decrement 4 value counter.
+ 000002B0  83 3D 00002908 R			cmp ctr, NULL				;compare to null.
+	   00
+ 000002B7  75 E0			jne L0
+ 000002B9  39 05 000028F0 R			cmp BestSum, eax			;checking for better product.
+ 000002BF  7F 51			jg L1
+ 000002C1  A3 000028F0 R			mov BestSum, eax			;move eax register value into BestSum, eax was greater.
+ 000002C6  8B 1F				mov ebx, [edi]				;moving back into ebx register
+ 000002C8  8B 1D 00002914 R			mov ebx, r_ctr				;moving row count into ebx register.
+ 000002CE  89 1D 000028F4 R			mov sRow, ebx				;storing value in memory sRow. ("Saved Row").
+ 000002D4  8B 1D 00002918 R			mov ebx, c_ctr				;moving column count into ebx register.
+ 000002DA  89 1D 000028F8 R			mov sCol, ebx				;storing value in memory sCol. ("Saved Column").
+						
+ 000002E0  8B 1F				mov ebx, [edi]
+ 000002E2  89 1D 00002938 R			mov numD, ebx				;store num 4.
+ 000002E8  2B 3D 0000290C R			sub edi, ROW				;shift shift one row.
+ 000002EE  8B 1F				mov ebx, [edi]				;get num 3.
+ 000002F0  89 1D 00002934 R			mov numC, ebx				;store num 3.
+ 000002F6  2B 3D 0000290C R			sub edi, ROW				;shift up one row.
+ 000002FC  8B 1F				mov ebx, [edi]				;get num 2.
+ 000002FE  89 1D 00002930 R			mov numB, ebx				;store num 2.
+ 00000304  2B 3D 00002910 R			sub edi, COL				;shift up one row.
+ 0000030A  8B 1F				mov ebx, [edi]				;get num 1.
+ 0000030C  89 1D 0000292C R			mov numA, ebx				;store num 1.			
+ 00000312				L1:
+ 00000312  A1 0000290C R		    mov eax, ROW				;move ROW (80) into eax register.
+ 00000317  8B 1D 00002900 R			mov ebx, nPos				;move nPos(0) starts at 0 into ebx register.
+ 0000031D  03 C3				add eax, ebx				;add each register ROW + nPos.
+ 0000031F  A3 00002900 R			mov nPos, eax				;store new value into nPos memory location.
+ 00000324  33 C0				XOR eax, eax				;clear register eax.
+ 00000326  33 DB				XOR ebx, ebx				;clear register ebx.
+
+ 00000328  8F 05 00002908 R			pop ctr						;getting counter from stack, returns it back to (4).
+ 0000032E  FF 35 00002908 R			push ctr					;push to the stack, so my pops keep giving me (4).
+ 00000334  8D 3D 00001944 R			lea edi, Ary1				;point at first position in Ary1.
+ 0000033A  03 3D 00002900 R			add edi, nPos				;moving right one column, because nPos holds offset of new position.
+						
+ 00000340  83 2D 00002914 R			sub r_ctr, 2				;get offset position(starting position is 0).
+	   02
+ 00000347  49					dec ecx						;dec ecx (boundary counter).
+ 00000348  83 F9 00				cmp ecx, NULL				;checking to see if at end of bounds.
+ 0000034B  0F 85 FFFFFF40		jne L00							;return to L00 which puts first value into eax register.
+ 00000351  8F 05 00002908 R			pop ctr						;releasing ctr so the stack is back on the return address.
+ 00000357  FF 35 00002908 R			push ctr					;pushing ctr back onto the stack.
+ 0000035D  8B 0D 00002920 R			mov ecx, dLimit				;resetting limiter.
+						
+ 00000363  8B 1D 000028FC R			mov ebx, nCOL				;moving offset into ebx register 4 bytes column shift right.
+ 00000369  89 1D 00002900 R			mov nPos, ebx				;moving offset into nPos (new position).
+ 0000036F  8D BB 00001944 R			lea edi,[Ary1 + ebx] 		;offsetting location by increments of 4 for each column.
+ 00000375  83 05 000028FC R			add nCol, 4					;increase offset of Col for next column check.
+	   04
+ 0000037C  C7 05 00002914 R			mov r_ctr, NULL				;resetting row location.
+	   00000000
+ 00000386  FF 05 00002918 R			inc c_ctr					;increment column counter moving to next column for calculations.
+ 0000038C  4A					dec edx 					;number of times the columns can safely shift within bounds.
+ 0000038D  83 FA 00				cmp edx, NULL				;if null it will return out of the procedure.
+ 00000390  0F 85 FFFFFEFB		jne L00
+ 00000396  8F 05 00002908 R			pop ctr						;getting back to return address on the stack by releasing ctr.	
+ 0000039C  C3					ret							;return to main proc.
+ 0000039D			Col_LR endp
+
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;; Row_LR UP/DOWN LEFT/RIGHT					    ;;
+				;; Checks rows Up to down from left to right.		;;
+				;; uses edi.										;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 0000039D			Row_LR proc
+ 0000039D  33 C0			XOR eax, eax
+ 0000039F  FF 35 00002908 R		push ctr
+ 000003A5  83 05 0000291C R		add cLimit, 3					;get the full 20.
+	   03
+ 000003AC  8B 0D 00002920 R		mov ecx, dLimit					;move dlimit left-->right into ecx register.
+ 000003B2  8B 15 0000291C R		mov edx, cLimit					;move cLimit going down a row into edx register.
+ 000003B8  8D 3D 00001944 R		lea edi, Ary1					;point at Ary1 (THE MATRIX 20x20).
+ 000003BE				L00: 
+ 000003BE  8B 07				mov eax, [edi]				;move value edi is pointing to into eax register.
+ 000003C0  FF 0D 00002908 R			dec ctr						;moved one of the four values into eax register (the first value).
+ 000003C6				L0:
+ 000003C6  03 3D 00002910 R			add edi, COL				;shift over right one.
+ 000003CC  8B 1F				mov ebx, [edi]				;move value edi is pointing to into ebx register.
+ 000003CE  0F AF C3				imul eax, ebx				;multiply values and store in eax register.
+ 000003D1  FF 05 00002918 R			inc c_ctr					;column counter. (shifting right one location for this numbers position).
+ 000003D7  FF 0D 00002908 R			dec ctr						;decrement 4 value counter.
+ 000003DD  83 3D 00002908 R			cmp ctr, NULL				;compare to null.
+	   00
+ 000003E4  75 E0			jne L0
+ 000003E6  39 05 000028F0 R			cmp BestSum, eax
+ 000003EC  7F 51			jg L1						
+ 000003EE  A3 000028F0 R			mov BestSum, eax			;move eax register value into BestSum, eax was greater
+ 000003F3  8B 1F				mov ebx, [edi]				;moving back into ebx register
+ 000003F5  8B 1D 00002914 R			mov ebx, r_ctr				;moving row count into ebx register.
+ 000003FB  89 1D 000028F4 R			mov sRow, ebx				;storing value in memory sRow. ("Saved Row").
+ 00000401  8B 1D 00002918 R			mov ebx, c_ctr				;moving column count into ebx register.
+ 00000407  89 1D 000028F8 R			mov sCol, ebx				;storing value in memory sCol. ("Saved Column").
+						
+ 0000040D  8B 1F				mov ebx, [edi]
+ 0000040F  89 1D 00002938 R			mov numD, ebx				;store num 4.
+ 00000415  2B 3D 00002910 R			sub edi, COL				;shift back one col.
+ 0000041B  8B 1F				mov ebx, [edi]				;get num 3.
+ 0000041D  89 1D 00002934 R			mov numC, ebx				;store num 3.
+ 00000423  2B 3D 00002910 R			sub edi, COL				;shift back one col.
+ 00000429  8B 1F				mov ebx, [edi]				;get num 2.
+ 0000042B  89 1D 00002930 R			mov numB, ebx				;store num 2.
+ 00000431  2B 3D 00002910 R			sub edi, COL				;shift back one col.
+ 00000437  8B 1F				mov ebx, [edi]				;get num 1.
+ 00000439  89 1D 0000292C R			mov numA, ebx				;store num 1.		
+ 0000043F				L1:
+ 0000043F  A1 00002910 R		    mov eax, COL				;move COL (4) into eax register.
+ 00000444  8B 1D 00002900 R			mov ebx, nPos				;move nPos(0) starts at 0 into ebx register.
+ 0000044A  03 C3				add eax, ebx				;add each register COL + nPos.
+ 0000044C  A3 00002900 R			mov nPos, eax				;store new value into nPos memory location.
+ 00000451  33 C0				XOR eax, eax				;clear register eax.
+ 00000453  33 DB				XOR ebx, ebx				;clear register ebx.
+
+ 00000455  8F 05 00002908 R			pop ctr						;getting counter from stack, returns it back to (4).
+ 0000045B  FF 35 00002908 R			push ctr					;push to the stack, so my pops keep giving me (4).
+ 00000461  8D 3D 00001944 R			lea edi, Ary1				;point at first position in Ary1.
+ 00000467  03 3D 00002900 R			add edi, nPos				;moving right one column, because nPos holds offset of new position.
+						
+ 0000046D  83 2D 00002918 R			sub c_ctr, 2				;get offset position(starting position is 0).
+	   02
+ 00000474  49					dec ecx						;dec ecx (boundary counter).
+ 00000475  83 F9 00				cmp ecx, NULL				;checking to see if at end of bounds.
+ 00000478  0F 85 FFFFFF40		jne L00							;return to L00 which puts first value into eax register.
+ 0000047E  8F 05 00002908 R			pop ctr						;releasing ctr so the stack is back on the return address.
+ 00000484  FF 35 00002908 R			push ctr					;pushing ctr back onto the stack.
+ 0000048A  8B 0D 00002920 R			mov ecx, dLimit				;resetting limiter.
+
+ 00000490  83 05 00002900 R			add nPos, 12				;offset by 12 (limit it goes to is 12 off from next row).
+	   0C
+ 00000497  8B 1D 00002904 R			mov ebx, nRow
+ 0000049D  8D BB 00001944 R			lea edi,[Ary1 + ebx] 		;offsetting location by increments of 4 for each column.
+ 000004A3  83 05 00002904 R			add nRow, 80				;increase by 80.
+	   50
+ 000004AA  FF 05 00002914 R			inc r_ctr					;increment row counter moving to next row for calculations.
+ 000004B0  C7 05 00002918 R			mov c_ctr, NULL				;resetting column location.
+	   00000000
+ 000004BA  4A					dec edx 					;number of times the columns can safely shift within bounds.
+ 000004BB  83 FA 00				cmp edx, NULL				;if null it will return out of the procedure.
+ 000004BE  0F 85 FFFFFEFA		jne L00
+ 000004C4  8F 05 00002908 R			pop ctr						;getting back to return address on the stack by releasing ctr.	
+ 000004CA  C3					ret							;return to main proc.
+ 000004CB			Row_LR endp
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;; Diagonal_UD_LR UP/DOWN LEFT/RIGHT			    ;;
+				;; Checks diagonally Up to down from left to right. ;;
+				;; uses edi.										;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 000004CB			Diagonal_UD_LR Proc
+ 000004CB  33 C0			XOR eax, eax					;zero out register.
+ 000004CD  FF 35 00002908 R		push ctr						;push ctr to the stack.
+ 000004D3  8B 0D 00002920 R		mov ecx, dLimit					;move dlimit (down limit) into ecx register.
+ 000004D9  8B 15 0000291C R		mov edx, cLimit					;move cLimit (column lmit) into edx register.
+ 000004DF  8D 3D 00001944 R		lea edi, Ary1					;point at Ary1 (THE MATRIX 20x20).
+ 000004E5				L00: 
+ 000004E5  8B 07				mov eax, [edi]				;move value edi is pointing to into eax register.
+ 000004E7  FF 0D 00002908 R			dec ctr						;moved one of the four values into eax register (the first value).
+ 000004ED				L0:
+ 000004ED  03 3D 0000290C R			add edi, ROW				;shift down one.
+ 000004F3  03 3D 00002910 R			add edi, COL				;shift right one.
+ 000004F9  8B 1F				mov ebx, [edi]				;add value edi is pointing to into ebx.
+ 000004FB  0F AF C3				imul eax, ebx				;multiply values and store in eax register.
+ 000004FE  FF 05 00002914 R			inc r_ctr					;row counter.
+ 00000504  FF 05 00002918 R			inc c_ctr					;column counter.
+ 0000050A  FF 0D 00002908 R			dec ctr						;decrement 4 value counter.
+ 00000510  83 3D 00002908 R			cmp ctr, NULL				;compare to null.
+	   00
+ 00000517  75 D4			jne L0
+ 00000519  39 05 000028F0 R			cmp BestSum, eax			;compare eax register value to BestSum value
+					
+ 0000051F  7F 63			jg L1						
+ 00000521  A3 000028F0 R			mov BestSum, eax			;move eax register value into BestSum, eax was greater
+ 00000526  8B 1F				mov ebx, [edi]				;moving back into ebx register
+ 00000528  8B 1D 00002914 R			mov ebx, r_ctr				;moving row count into ebx register.
+ 0000052E  89 1D 000028F4 R			mov sRow, ebx				;storing value in memory sRow. ("Saved Row").
+ 00000534  8B 1D 00002918 R			mov ebx, c_ctr				;moving column count into ebx register.
+ 0000053A  89 1D 000028F8 R			mov sCol, ebx				;storing value in memory sCol. ("Saved Column").
+
+ 00000540  8B 1F				mov ebx, [edi]
+ 00000542  89 1D 00002938 R			mov numD, ebx				;store num 4.
+ 00000548  2B 3D 0000290C R			sub edi, ROW				;shift one row up.
+ 0000054E  2B 3D 00002910 R			sub edi, COL				;shift one column left.
+ 00000554  8B 1F				mov ebx, [edi]				;get num 3.
+ 00000556  89 1D 00002934 R			mov numC, ebx				;store num 3.
+ 0000055C  2B 3D 0000290C R			sub edi, ROW				;shift one row up.
+ 00000562  2B 3D 00002910 R			sub edi, COL				;shift one column left.
+ 00000568  8B 1F				mov ebx, [edi]				;get num 2.
+ 0000056A  89 1D 00002930 R			mov numB, ebx				;store num 2.
+ 00000570  2B 3D 0000290C R			sub edi, ROW				;shift one row up
+ 00000576  2B 3D 00002910 R			sub edi, COL				;shift one column left.
+ 0000057C  8B 1F				mov ebx, [edi]				;get num 1.
+ 0000057E  89 1D 0000292C R			mov numA, ebx				;store num 1.
+ 00000584				L1:
+ 00000584  A1 0000290C R		    mov eax, ROW				;move ROW (80) into eax register.
+ 00000589  8B 1D 00002900 R			mov ebx, nPos				;move nPos(0) starts at 0 into ebx register.
+ 0000058F  03 C3				add eax, ebx				;add each register ROW + nPos.
+ 00000591  A3 00002900 R			mov nPos, eax				;store new value into nPos memory location.
+ 00000596  33 C0				XOR eax, eax				;clear register eax.
+ 00000598  33 DB				XOR ebx, ebx				;clear register ebx.
+
+ 0000059A  8F 05 00002908 R			pop ctr						;getting counter from stack, returns it back to (4).
+ 000005A0  FF 35 00002908 R			push ctr					;push to the stack, so my pops keep giving me (4).
+ 000005A6  8D 3D 00001944 R			lea edi, Ary1				;point at first position in Ary1.
+ 000005AC  03 3D 00002900 R			add edi, nPos				;moving down 1 row, because nPos holds offset of new position.
+ 000005B2  83 2D 00002914 R			sub r_ctr, 2				;resetting row by 2. (because index is 0).
+	   02
+ 000005B9  83 2D 00002918 R			sub c_ctr, 3				;resetting col by 2. (because index is 0).
+	   03
+ 000005C0  49					dec ecx						;dec ecx (boundary counter).
+ 000005C1  83 F9 00				cmp ecx, NULL				;checking to see if at end of bounds.
+ 000005C4  0F 85 FFFFFF1B		jne L00							;return to L00 which puts first value into eax register.
+ 000005CA  8F 05 00002908 R			pop ctr						;releasing ctr so the stack is back on the return address.
+ 000005D0  FF 35 00002908 R			push ctr					;pushing ctr back onto the stack.
+ 000005D6  8B 0D 00002920 R			mov ecx, dLimit				;resetting limiter.
+
+ 000005DC  C7 05 00002900 R			mov nPos, NULL				;set back to 0.
+	   00000000
+ 000005E6  8B 1D 000028FC R			mov ebx, nCol				;move nCol into ebx register to tack onto nPos.
+ 000005EC  8D BB 00001944 R			lea edi, [Ary1 + ebx] 		;offsetting location by increments of 4 for each column.
+ 000005F2  89 1D 00002900 R			mov nPos, ebx				;move ebx register value into nPos.
+ 000005F8  83 05 000028FC R			add nCol, 4					;setup nCol for next column shift.
+	   04
+ 000005FF  C7 05 00002914 R			mov r_ctr, NULL				;reset row counter.
+	   00000000
+ 00000609  FF 05 00002918 R			inc c_ctr					;increment to the next column right shift.
+ 0000060F  4A					dec edx 					;number of times the columns can safely shift within bounds.
+ 00000610  83 FA 00				cmp edx, NULL				;if null it will return out of the procedure.
+ 00000613  0F 85 FFFFFECC		jne L00
+ 00000619  8F 05 00002908 R			pop ctr						;getting back to return address on the stack by releasing ctr.	
+ 0000061F  C3					ret							;return to main proc.
+ 00000620			Diagonal_UD_LR endp
+
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;; Diagonal_DU_LR DOWN/UP LEFT/RIGHT			    ;;
+				;; Checks diagonally Down to up from left to right. ;;
+				;; uses edi.										;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 00000620			Diagonal_DU_LR proc		
+ 00000620  33 C0			XOR eax, eax					;zero out register.
+ 00000622  FF 35 00002908 R		push ctr						;push ctr to the stack.
+ 00000628  C7 05 00002914 R		mov r_ctr, 19					;bottom row.
+	   00000013
+ 00000632  C7 05 00002918 R		mov c_ctr, NULL					;bottom position.
+	   00000000
+ 0000063C  8B 0D 00002920 R		mov ecx, dLimit					;move limit on Up into ecx register.
+ 00000642  8B 15 0000291C R		mov edx, cLimit					;move climit (column limit) into edx register.
+ 00000648  8B 1D 00002924 R		mov ebx, blRow					;move bottom left row index into ebx register.   
+ 0000064E  8D BB 00001944 R		lea edi, [Ary1 + ebx] 	
+ 00000654				M00:
+ 00000654  8B 07				mov eax, [edi]				;move value edi is pointing to into eax register.
+ 00000656  FF 0D 00002908 R			dec ctr						;moved one of four values into eax register (the first value).
+ 0000065C				M0:
+ 0000065C  2B 3D 0000290C R			sub edi, ROW				;subtracting to shift up a row.
+ 00000662  03 3D 00002910 R			add edi, COL				;adding to shift right a column.
+ 00000668  8B 1F				mov ebx, [edi]				;add value edi is pointing to into ebx.
+ 0000066A  0F AF C3				imul eax, ebx				;multiply values and store in eax register.
+ 0000066D  FF 0D 00002914 R			dec r_ctr
+ 00000673  FF 05 00002918 R			inc c_ctr
+ 00000679  FF 0D 00002908 R			dec ctr						;decrement counter.
+ 0000067F  83 3D 00002908 R			cmp ctr, NULL				;compare to null.
+	   00
+ 00000686  75 D4			jne M0
+ 00000688  39 05 000028F0 R			cmp BestSum, eax			;compare eax register value to BestSum value.
+					
+ 0000068E  7F 61			jg M1
+ 00000690  A3 000028F0 R			mov BestSum, eax			;move eax resigter value into BestSum, eax was greater.
+ 00000695  8B 1D 00002914 R			mov ebx, r_ctr				;move r_ctr into ebx register.
+ 0000069B  89 1D 000028F4 R			mov sRow, ebx				;store in sRow.
+ 000006A1  8B 1D 00002918 R			mov ebx, c_ctr				;move c_ctr into ebx register.
+ 000006A7  89 1D 000028F8 R			mov sCol, ebx				;store in sCol.
+
+ 000006AD  8B 1F				mov ebx, [edi]
+ 000006AF  89 1D 00002938 R			mov numD, ebx				;store num 4.
+ 000006B5  03 3D 0000290C R			add edi, ROW				;shift one row up.
+ 000006BB  2B 3D 00002910 R			sub edi, COL				;shift one column left.
+ 000006C1  8B 1F				mov ebx, [edi]				;get num 3.
+ 000006C3  89 1D 00002934 R			mov numC, ebx				;store num 3.
+ 000006C9  03 3D 0000290C R			add edi, ROW				;shift one row up.
+ 000006CF  2B 3D 00002910 R			sub edi, COL				;shift one column left.
+ 000006D5  8B 1F				mov ebx, [edi]				;get num 2.
+ 000006D7  89 1D 00002930 R			mov numB, ebx				;store num 2.
+ 000006DD  03 3D 0000290C R			add edi, ROW				;shift one row up
+ 000006E3  2B 3D 00002910 R			sub edi, COL				;shift one column left.
+ 000006E9  8B 1F				mov ebx, [edi]				;get num 1.
+ 000006EB  89 1D 0000292C R			mov numA, ebx				;store num 1.
+ 000006F1				M1:
+ 000006F1  A1 0000290C R			mov eax, ROW				;move ROW (80) into eax register.
+ 000006F6  F7 D8				neg eax						;change to (-80) in eax register.
+ 000006F8  8B 1D 00002900 R			mov ebx, nPos				;store new value into nPos memory location.
+ 000006FE  03 C3				add eax, ebx				;add eax and ebx registers together (stored in eax).
+ 00000700  A3 00002900 R			mov nPos, eax				;move eax into nPos memory location.
+ 00000705  33 C0				XOR eax, eax				;clear register.
+ 00000707  8B 1D 00002924 R			mov ebx, blRow				;ebx is set back to 1520		
+
+ 0000070D  8F 05 00002908 R			pop ctr						;pop counter from the stack. resets ctr to 4.
+ 00000713  FF 35 00002908 R			push ctr					;push counter to the stack.
+ 00000719  8D BB 00001944 R			lea edi, [Ary1+ebx]			;point at new location.
+ 0000071F  03 3D 00002900 R			add edi, nPos				;shift by nPos.
+ 00000725  83 05 00002914 R			add r_ctr, 2				;resetting row by 2. (because index is 0).
+	   02
+ 0000072C  83 2D 00002918 R			sub c_ctr, 3				;resetting col by 3. (because index is 0).
+	   03
+ 00000733  49					dec ecx						;decrement ecx register.
+ 00000734  83 F9 00				cmp ecx, NULL				;compare to NULL.
+ 00000737  0F 85 FFFFFF17		jne M00
+ 0000073D  8F 05 00002908 R			pop ctr						;pop counter from the stack.
+ 00000743  FF 35 00002908 R			push ctr					;push counter to the stack.
+ 00000749  8B 0D 00002920 R			mov ecx, dLimit				;set ecx register to dLimit.
+						
+ 0000074F  C7 05 00002900 R			mov nPos, NULL				;set back to 0.
+	   00000000
+ 00000759  8B 1D 00002924 R			mov ebx, blRow				;reset to starting position (1520)
+ 0000075F  03 1D 000028FC R			add ebx, nCol				;offsetting by increments of 4 in the bottom row.
+ 00000765  89 1D 00002924 R			mov blRow, ebx				;store new offset value in blRow (i.e. 1524, 1528...etc).
+ 0000076B  8D BB 00001944 R			lea edi, [Ary1 + ebx]		;pointing to next starting position.
+ 00000771  FF 05 00002918 R			inc c_ctr					;offset by 1, moving start to right shift column.
+ 00000777  C7 05 00002914 R			mov r_ctr, 19				;offset row counter to bottom row.
+	   00000013
+ 00000781  4A					dec edx						;decrement limit counter.
+ 00000782  83 FA 00				cmp edx, NULL				;if null it will return out of the procedure.
+ 00000785  0F 85 FFFFFEC9		jne M00
+ 0000078B  8F 05 00002908 R			pop ctr						;getting back to return address on the stack by releasing ctr.
+ 00000791  C3					ret							;return to main proc.
+ 00000792			Diagonal_DU_LR endp
+
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;; Diagonal_DU_RL DOWN/UP RIGHT/LEFT			    ;;
+				;; Checks diagonally Down to up from right to left. ;;
+				;; uses edi.										;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 00000792			Diagonal_DU_RL proc
+ 00000792  33 C0			XOR eax, eax					;zero out register.
+ 00000794  FF 35 00002908 R		push ctr						;push ctr to the stack.
+ 0000079A  C7 05 00002914 R		mov r_ctr, 19					;bottom row.
+	   00000013
+ 000007A4  C7 05 00002918 R		mov c_ctr, 19					;bottom position.
+	   00000013
+ 000007AE  8B 0D 00002920 R		mov ecx, dLimit					;move limit on Up into ecx register.
+ 000007B4  8B 15 0000291C R		mov edx, cLimit					;move climit (column limit) into edx register.
+ 000007BA  8B 1D 00002928 R		mov ebx, brRow					;move bottom right row index into ebx register.   
+ 000007C0  8D BB 00001944 R		lea edi, [Ary1 + ebx] 	
+ 000007C6				M00:
+ 000007C6  8B 07				mov eax, [edi]				;move value edi is pointing to into eax register.	
+ 000007C8  FF 0D 00002908 R			dec ctr						;moved one of four values into eax register (the first value).
+ 000007CE				M0:
+ 000007CE  2B 3D 0000290C R			sub edi, ROW				;subtracting to shift up a row.
+ 000007D4  2B 3D 00002910 R			sub edi, COL				;adding to shift left a column. (SUBTRACTED FOR RIGHT TO LEFT OFFSET).
+ 000007DA  8B 1F				mov ebx, [edi]				;add value edi is pointing to into ebx.
+ 000007DC  0F AF C3				imul eax, ebx				;multiply values and store in eax register.
+ 000007DF  FF 0D 00002914 R			dec r_ctr					;shift left one row.
+ 000007E5  FF 0D 00002918 R			dec c_ctr					;shift left one column.
+ 000007EB  FF 0D 00002908 R			dec ctr						;decrement counter.
+ 000007F1  83 3D 00002908 R			cmp ctr, NULL				;compare to null.
+	   00
+ 000007F8  75 D4			jne M0
+ 000007FA  39 05 000028F0 R			cmp BestSum, eax			;compare eax register value to BestSum value.
+					
+ 00000800  7F 61			jg M1
+ 00000802  A3 000028F0 R			mov BestSum, eax			;move eax resigter value into BestSum, eax was greater.
+ 00000807  8B 1D 00002914 R			mov ebx, r_ctr				;move r_ctr into ebx register.
+ 0000080D  89 1D 000028F4 R			mov sRow, ebx				;store in sRow.
+ 00000813  8B 1D 00002918 R			mov ebx, c_ctr				;move c_ctr into ebx register.
+ 00000819  89 1D 000028F8 R			mov sCol, ebx				;store in sCol.
+
+ 0000081F  8B 1F				mov ebx, [edi]
+ 00000821  89 1D 00002938 R			mov numD, ebx				;store num 4.
+ 00000827  03 3D 0000290C R			add edi, ROW				;shift one row up.
+ 0000082D  03 3D 00002910 R			add edi, COL				;shift one column left.
+ 00000833  8B 1F				mov ebx, [edi]				;get num 3.
+ 00000835  89 1D 00002934 R			mov numC, ebx				;store num 3.
+ 0000083B  03 3D 0000290C R			add edi, ROW				;shift one row up.
+ 00000841  03 3D 00002910 R			add edi, COL				;shift one column left.
+ 00000847  8B 1F				mov ebx, [edi]				;get num 2.
+ 00000849  89 1D 00002930 R			mov numB, ebx				;store num 2.
+ 0000084F  03 3D 0000290C R			add edi, ROW				;shift one row up
+ 00000855  03 3D 00002910 R			add edi, COL				;shift one column left.
+ 0000085B  8B 1F				mov ebx, [edi]				;get num 1.
+ 0000085D  89 1D 0000292C R			mov numA, ebx				;store num 1.
+ 00000863				M1:
+ 00000863  A1 0000290C R			mov eax, ROW				;move ROW (80) into eax register.
+ 00000868  F7 D8				neg eax						;change to (-80) in eax register.
+ 0000086A  8B 1D 00002900 R			mov ebx, nPos				;store new value into nPos memory location.
+ 00000870  03 C3				add eax, ebx				;add eax and ebx registers together (stored in eax).
+ 00000872  A3 00002900 R			mov nPos, eax				;move eax into nPos memory location.
+ 00000877  33 C0				XOR eax, eax				;clear register.
+ 00000879  8B 1D 00002928 R			mov ebx, brRow				;ebx is set back to 1520	
+
+ 0000087F  8F 05 00002908 R			pop ctr						;pop counter from the stack. resets ctr to 4.
+ 00000885  FF 35 00002908 R			push ctr					;push counter to the stack.
+ 0000088B  83 05 00002914 R			add r_ctr, 2				;resetting row by 2. (because index is 0).
+	   02
+ 00000892  83 05 00002918 R			add c_ctr, 3				;resetting col by 3. (because index is 0).
+	   03
+ 00000899  8D BB 00001944 R			lea edi, [Ary1+ebx]			;point at new location.
+ 0000089F  03 3D 00002900 R			add edi, nPos				;shift by nPos.
+ 000008A5  49					dec ecx						;decrement ecx register.
+ 000008A6  83 F9 00				cmp ecx, NULL				;compare to NULL.
+ 000008A9  0F 85 FFFFFF17		jne M00
+ 000008AF  8F 05 00002908 R			pop ctr						;pop counter from the stack.
+ 000008B5  FF 35 00002908 R			push ctr					;push counter to the stack.
+ 000008BB  8B 0D 00002920 R			mov ecx, dLimit				;set ecx register to dLimit.
+						
+ 000008C1  C7 05 00002900 R			mov nPos, NULL				;set back to 0.
+	   00000000
+ 000008CB  8B 1D 00002928 R			mov ebx, brRow				;reset to starting position (1596)
+ 000008D1  2B 1D 000028FC R			sub ebx, nCol				;offsetting by increments of 4 in the bottom row.
+ 000008D7  89 1D 00002928 R			mov brRow, ebx				;store new offset value in blRow (i.e. 1524, 1528...etc).
+ 000008DD  8D BB 00001944 R			lea edi, [Ary1 + ebx]		;pointing to next starting position.
+ 000008E3  FF 0D 00002918 R			dec c_ctr					;decrement column counter for new position in array.
+ 000008E9  C7 05 00002914 R			mov r_ctr, 19				;offset row counter to bottom row.
+	   00000013
+ 000008F3  4A					dec edx
+ 000008F4  83 FA 00				cmp edx, NULL				;if null it will return out of the procedure.
+ 000008F7  0F 85 FFFFFEC9		jne M00
+ 000008FD  8F 05 00002908 R			pop ctr						;getting back to return address on the stack by releasing ctr.
+ 00000903  C3					ret							;return to main proc.
+ 00000904			Diagonal_DU_RL endp
+
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;; Diagonal_UD_RL UP/DOWN RIGHT/LEFT			    ;;
+				;; Checks diagonally Up to down from right to left. ;;
+				;; uses edi.										;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 00000904			Diagonal_UD_RL	proc
+ 00000904  FF 35 00002908 R		push ctr						;push ctr to the stack.
+ 0000090A  C7 05 00002914 R		mov r_ctr, NULL					;bottom row.
+	   00000000
+ 00000914  C7 05 00002918 R		mov c_ctr, 19					;bottom position.
+	   00000013
+ 0000091E  C7 05 000028FC R		mov nCol, NULL					;setting nCol to zero for start will increment by 4 to hold column offset.
+	   00000000
+ 00000928  A1 00002910 R		mov eax, COL					;put 80 in eax register.
+ 0000092D  8B 1D 0000290C R		mov ebx, ROW					;put 4 in ebx register.
+ 00000933  2B D8			sub ebx, eax					;gets me from 80 to 76 (starting position needed).
+ 00000935  8B 0D 00002920 R		mov ecx, dLimit					;move limit on Up into ecx register.
+ 0000093B  8B 15 0000291C R		mov edx, cLimit					;move climit (column limit) into edx register.   
+					
+ 00000941  8D BB 00001944 R		lea edi, [Ary1 + ebx] 	
+ 00000947				M00:
+ 00000947  8B 07				mov eax, [edi]				;move value edi is pointing to into eax register.
+ 00000949  FF 0D 00002908 R			dec ctr						;moved one of four values into eax register (the first value).
+ 0000094F				M0:
+ 0000094F  03 3D 0000290C R			add edi, ROW				;adding to shift down a row.
+ 00000955  2B 3D 00002910 R			sub edi, COL				;subtracting to shift right a column. 
+ 0000095B  8B 1F				mov ebx, [edi]				;add value edi is pointing to into ebx.
+ 0000095D  0F AF C3				imul eax, ebx				;multiply values and store in eax register.
+ 00000960  FF 05 00002914 R			inc r_ctr					;shift left by one row.
+ 00000966  FF 0D 00002918 R			dec c_ctr					;shift left by one column.
+ 0000096C  FF 0D 00002908 R			dec ctr						;decrement counter.
+ 00000972  83 3D 00002908 R			cmp ctr, NULL				;compare to null.
+	   00
+ 00000979  75 D4			jne M0
+ 0000097B  39 05 000028F0 R			cmp BestSum, eax			;compare eax register value to BestSum value.
+					
+ 00000981  7F 61			jg M1
+ 00000983  A3 000028F0 R			mov BestSum, eax			;move eax resigter value into BestSum, eax was greater.
+ 00000988  8B 1D 00002914 R			mov ebx, r_ctr				;move r_ctr into ebx register.
+ 0000098E  89 1D 000028F4 R			mov sRow, ebx				;store in sRow.
+ 00000994  8B 1D 00002918 R			mov ebx, c_ctr				;move c_ctr into ebx register.
+ 0000099A  89 1D 000028F8 R			mov sCol, ebx				;store in sCol.
+
+ 000009A0  8B 1F				mov ebx, [edi]
+ 000009A2  89 1D 00002938 R			mov numD, ebx				;store num 4.
+ 000009A8  2B 3D 0000290C R			sub edi, ROW				;shift one row up.
+ 000009AE  03 3D 00002910 R			add edi, COL				;shift one column left.
+ 000009B4  8B 1F				mov ebx, [edi]				;get num 3.
+ 000009B6  89 1D 00002934 R			mov numC, ebx				;store num 3.
+ 000009BC  2B 3D 0000290C R			sub edi, ROW				;shift one row up.
+ 000009C2  03 3D 00002910 R			add edi, COL				;shift one column left.
+ 000009C8  8B 1F				mov ebx, [edi]				;get num 2.
+ 000009CA  89 1D 00002930 R			mov numB, ebx				;store num 2.
+ 000009D0  2B 3D 0000290C R			sub edi, ROW				;shift one row up
+ 000009D6  03 3D 00002910 R			add edi, COL				;shift one column left.
+ 000009DC  8B 1F				mov ebx, [edi]				;get num 1.
+ 000009DE  89 1D 0000292C R			mov numA, ebx				;store num 1.
+ 000009E4				M1:
+ 000009E4  A1 0000290C R			mov eax, ROW				;move ROW (80) into eax register.
+ 000009E9  8B 1D 00002900 R			mov ebx, nPos				;store new value into nPos memory location.
+ 000009EF  03 C3				add eax, ebx				;add eax and ebx registers together (stored in eax).
+ 000009F1  A3 00002900 R			mov nPos, eax				;move eax into nPos memory location.
+
+ 000009F6  A1 00002910 R			mov eax, COL				;put 80 in eax register.
+ 000009FB  8B 1D 0000290C R			mov ebx, ROW				;put 4 in ebx register.
+ 00000A01  2B D8				sub ebx, eax				;gets me from 80 to 76 (starting position needed).		
+ 00000A03  2B 1D 000028FC R			sub ebx, nCol		
+
+ 00000A09  8F 05 00002908 R			pop ctr						;pop counter from the stack. resets ctr to 4.
+ 00000A0F  FF 35 00002908 R			push ctr					;push counter to the stack.
+ 00000A15  8D BB 00001944 R			lea edi, [Ary1+ebx]			;point at new location.
+ 00000A1B  03 3D 00002900 R			add edi, nPos				;shift by nPos.
+ 00000A21  83 2D 00002914 R			sub r_ctr,2					;set back to next position.
+	   02
+ 00000A28  83 05 00002918 R			add c_ctr,3					;set back to next position.
+	   03
+ 00000A2F  49					dec ecx						;decrement ecx register.
+ 00000A30  83 F9 00				cmp ecx, NULL				;compare to NULL.
+ 00000A33  0F 85 FFFFFF0E		jne M00
+ 00000A39  8F 05 00002908 R			pop ctr						;pop counter from the stack.
+ 00000A3F  FF 35 00002908 R			push ctr					;push counter to the stack.
+ 00000A45  8B 0D 00002920 R			mov ecx, dLimit				;set ecx register to dLimit.
+						
+ 00000A4B  C7 05 00002900 R			mov nPos, NULL				;set back to 0.
+	   00000000
+ 00000A55  A1 00002910 R			mov eax, COL				;move COL into eax register.
+ 00000A5A  8B 1D 0000290C R			mov ebx, ROW				;move ROW into ebx register.
+ 00000A60  2B D8				sub ebx, eax				;subtract the registers storing the value in ebx register.
+ 00000A62  83 05 000028FC R			add nCol, 4					;increasing nCol for offset before subtracting from position.
+	   04
+ 00000A69  2B 1D 000028FC R			sub ebx, nCol				;offsetting by increments of 4 in the bottom row.
+						
+ 00000A6F  8D BB 00001944 R			lea edi, [Ary1 + ebx]		;pointing to next starting position.
+ 00000A75  FF 0D 00002918 R			dec c_ctr					;shift left one column for new position.
+ 00000A7B  C7 05 00002914 R			mov r_ctr,NULL				;reset row to start position.
+	   00000000
+ 00000A85  4A					dec edx
+ 00000A86  83 FA 00				cmp edx, NULL				;if null it will return out of the procedure.
+ 00000A89  0F 85 FFFFFEB8		jne M00
+ 00000A8F  8F 05 00002908 R			pop ctr						;getting back to return address on the stack by releasing ctr.
+ 00000A95  C3					ret							;return to main proc.
+ 00000A96			Diagonal_UD_RL	endp
+					
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;;Procedure to TITLE OF PROGRAM.         ;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 00000A96			Print_Title proc
+ 00000A96  8D 35 00000033 R			lea esi, fline					;format line bunch of ===.
+ 00000A9C  E8 000000D8				call PrintToFile				;prints to file.
+ 00000AA1  8D 35 00000077 R			lea esi, Msg0					;The program Title.
+ 00000AA7  E8 000000CD				call PrintToFile				;prints to file.
+ 00000AAC  8D 35 00000033 R			lea esi, fline					;format line bunch of ===.
+ 00000AB2  E8 000000C2				call PrintToFile				;prints to file.
+ 00000AB7  C3					ret								;return to main proc.
+ 00000AB8			Print_Title endp	
+
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;; FillAry will convert size value from  ;;
+				;; byte to dword and put into an array.  ;;
+				;; returns with esi pointing to last     ;;
+				;; position used in the buffer (BUFF).   ;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 00000AB8			FillAry Proc
+ 00000AB8  B9 00000014			mov ecx, 20							;total character returns. Since 20 x 20 array.
+ 00000ABD				  L1:
+ 00000ABD  8B 06				mov eax, [esi]					;move pointed to value into eax register.	
+ 00000ABF  3C 20				cmp al, SPC						;compare al with space.
+ 00000AC1  74 18			 je	foundSpace					    ;looking to see if space was found.
+													
+ 00000AC3					GoOn:
+ 00000AC3  80 FB 0D					cmp bl, CR					;checking to see if return character.
+ 00000AC6  74 16			 je	foundCR							;branches to the end of the procedures.
+
+ 00000AC8  E8 00000061					call ATOI					;call ascii to integer, uses esi push to stack if needed later.
+ 00000ACD  89 07					mov [edi], eax				;move integer into Polygon1 (P1).
+ 00000ACF  FF 05 000028EC R				inc valctr
+ 00000AD5  83 C7 04					add edi, 4					;increment edi pointer.
+ 00000AD8  46						inc esi						;increment esi pointer, it is pointing to BUFF (the buffer).
+ 00000AD9  EB E2				    jmp L1
+
+ 00000ADB				 foundSpace:
+ 00000ADB  46						inc esi 					;increment buff pointer..
+ 00000ADC  EB DF					jmp L1						;branch to L1
+
+ 00000ADE				 foundCR:
+ 00000ADE  46						inc esi						;increment buff pointer.
+ 00000ADF  B3 00					mov bl, 0					;clear bl register.
+ 00000AE1  49						dec ecx						;dec ecx register.
+ 00000AE2  83 F9 00					cmp ecx, NULL				;compare to NULL, if not return to L1 branch.
+ 00000AE5  75 D6			jne L1
+ 00000AE7  C3					    ret							;return to main procedure.
+ 00000AE8			FillAry endp
+
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;; Procedure OutputFileOpenSetup         ;;
+				;; Opens output file and stores handle   ;;
+				;; in outfile.                           ;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 00000AE8			OutputFileOpenSetup Proc
+ 00000AE8  8D 15 00000008 R			lea edx, outFN				    ;outfile 
+ 00000AEE  E8 00000000 E			call CreateOutputFile           ;creating output file
+ 00000AF3  A3 0000002F R			mov outfile, eax			    ;move the handle from eax into outfile to store.
+ 00000AF8  C3					ret							    ;return to main procedure.
+ 00000AF9			OutputFileOpenSetup endp
+
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;; Procedure ReadFileIntoBuffer          ;;
+				;; reads the input file into a buffer    ;;
+				;; returns to main procedure when done.  ;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 00000AF9			ReadFileIntoBuffer Proc
+ 00000AF9  8D 15 0000001E R			lea edx, inFN	                ;move inFN (input file) into edx for input file parameter.
+ 00000AFF  E8 00000000 E			call OpenInputFile			    ;opening input file.
+ 00000B04  A3 0000002B R			mov infile, eax				    ;move the handle from eax into input file.
+ 00000B09  B9 00001770				mov ecx, 6000				    ;move buffer size into ecx counter.
+ 00000B0E  8D 15 000001D2 R			lea edx, BUFF		            ;buffer size in edx.
+ 00000B14  A1 0000002B R			mov eax, infile				    ;move handle for infile into eax.
+ 00000B19  E8 00000000 E			call ReadFromFile			    ;read file into buffer.
+ 00000B1E  A3 000028E8 R		    mov byteCount, eax
+ 00000B23  A1 0000002B R			mov eax, infile				    ;moving infile handle into eax.
+ 00000B28  E8 00000000 E			call CloseFile				    ;closing input file.
+ 00000B2D  C3					ret							    ;return to main proc.
+ 00000B2E			ReadFileIntoBuffer endp
+
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;; Procedure to ASCII to Integer.        ;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 00000B2E			ATOI Proc
+ 00000B2E  B8 00000000			mov eax, 0							;zero out eax register.
+ 00000B33  BB 00000000			mov ebx, 0							;zero out ebx register.
+ 00000B38			NextDigit:
+ 00000B38  8A 1E				mov bl, [esi]					;move value esi points to into bl   
+ 00000B3A  80 FB 30				cmp bl, '0'						;compare digit to 0 character
+ 00000B3D  7C 14			jl getOut							;jump if less than
+ 00000B3F  80 FB 39				cmp bl, '9'						;compare digit to 9 character
+ 00000B42  7F 0F			jg getOut							;jump if greater than
+ 00000B44  80 E3 0F				AND bl, 0Fh
+
+ 00000B47  0F AF 05			    imul eax, TEN					;multiply eax by 10
+	   00000000 R
+ 00000B4E  03 C3			    add eax, ebx					;add ebx register to eax register.
+ 00000B50  46					inc esi							;increment the ptr
+ 00000B51  EB E5		jmp NextDigit
+ 00000B53				getOut:
+ 00000B53  C3					ret								;returns to main proc.
+ 00000B54			ATOI endp
+
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;;Procedure to Integer to ASCII.         ;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+ 00000B54			ITOA Proc
+ 00000B54  8B 1D 00000000 R		mov ebx, TEN						;setting base value for the ascii number.
+ 00000B5A				NextDigit: 
+ 00000B5A  BA 00000000				mov edx, NULL					;setup for divide
+ 00000B5F  F7 FB				idiv ebx						;edx ax/ebx
+ 00000B61  83 CA 30				OR edx, '0'						;converting digit to ASCII by adding 30h or '0'
+ 00000B64  4E					dec esi							;decrementing the pointer to get to the next digit  <----goes backwards from LSB to MSB
+ 00000B65  88 16				mov [esi],dl					;mov dl not location esi is pointing at.
+ 00000B67  83 F8 00				cmp eax, NULL					;compares eax to 0.
+ 00000B6A  75 EE			jne NextDigit
+ 00000B6C  C3				ret									;returns to main proc.
+ 00000B6D			ITOA endp
+
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;;Procedure to BlankOut Memory.          ;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 00000B6D			BlankOut Proc
+ 00000B6D  B0 20			mov al, SPC							;moving a blank to al.
+ 00000B6F			blank:
+ 00000B6F  88 06			mov[esi], al						;point to al.
+ 00000B71  46				inc esi								;increment esi pointer.
+ 00000B72  49				dec ecx								;decrement ecx counter.
+ 00000B73  83 F9 00			cmp ecx, NULL						;compare ecx to NULL.
+ 00000B76  75 F7		jne blank
+ 00000B78  C3				ret									;return to main proc.
+ 00000B79			BlankOut endp
+
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;; Procedure to print data to file.      ;;
+				;; uses esi to print characters.         ;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ 00000B79			PrintToFile Proc
+ 00000B79			next:
+ 00000B79  8A 16		     mov dl, [esi]						;moving value esi points to into dl
+ 00000B7B  80 FA 00		     cmp dl, NULL						;comparing to 0.
+ 00000B7E  74 14		     je outOfHere
+ 00000B80  8B D6				mov edx, esi					;mov esi into edx.
+ 00000B82  B9 00000001				mov ecx, 1						;move 1 into ecx.
+ 00000B87  A1 0000002F R			mov eax, outfile				;setting eax to handle for outfile.
+ 00000B8C  E8 00000000 E			call WriteToFile				;calling WriteToFile proc.
+ 00000B91  46					inc esi							;incrementing esi index.
+ 00000B92  EB E5		jmp next
+ 00000B94				outOfHere:
+ 00000B94  C3					ret								;returns to main proc.
+ 00000B95			PrintToFile endp
+
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				;;-----------END OF PROGRAM--------------;;
+				;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+				end main
+Microsoft (R) Macro Assembler Version 14.24.28316.0	    03/29/20 00:15:12
+BDahmer_LargestProductProgram.asm			     Symbols 2 - 1
+
+
+
+
+Structures and Unions:
+
+                N a m e                  Size
+                                         Offset      Type
+
+CONSOLE_CURSOR_INFO  . . . . . .	 00000008
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+  bVisible . . . . . . . . . . .	 00000004	 DWord
+CONSOLE_SCREEN_BUFFER_INFO . . .	 00000016
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+  dwCursorPosition . . . . . . .	 00000004	 DWord
+  wAttributes  . . . . . . . . .	 00000008	 Word
+  srWindow . . . . . . . . . . .	 0000000A	 QWord
+  dwMaximumWindowSize  . . . . .	 00000012	 DWord
+COORD  . . . . . . . . . . . . .	 00000004
+  X  . . . . . . . . . . . . . .	 00000000	 Word
+  Y  . . . . . . . . . . . . . .	 00000002	 Word
+FILETIME . . . . . . . . . . . .	 00000008
+  loDateTime . . . . . . . . . .	 00000000	 DWord
+  hiDateTime . . . . . . . . . .	 00000004	 DWord
+FOCUS_EVENT_RECORD . . . . . . .	 00000004
+  bSetFocus  . . . . . . . . . .	 00000000	 DWord
+FPU_ENVIRON  . . . . . . . . . .	 0000001C
+  controlWord  . . . . . . . . .	 00000000	 Word
+  statusWord . . . . . . . . . .	 00000004	 Word
+  tagWord  . . . . . . . . . . .	 00000008	 Word
+  instrPointerOffset . . . . . .	 0000000C	 DWord
+  instrPointerSelector . . . . .	 00000010	 DWord
+  operandPointerOffset . . . . .	 00000014	 DWord
+  operandPointerSelector . . . .	 00000018	 Word
+INPUT_RECORD . . . . . . . . . .	 00000014
+  EventType  . . . . . . . . . .	 00000000	 Word
+  Event  . . . . . . . . . . . .	 00000004	 XmmWord
+  bKeyDown . . . . . . . . . . .	 00000000	 DWord
+  wRepeatCount . . . . . . . . .	 00000004	 Word
+  wVirtualKeyCode  . . . . . . .	 00000006	 Word
+  wVirtualScanCode . . . . . . .	 00000008	 Word
+  uChar  . . . . . . . . . . . .	 0000000A	 Word
+  UnicodeChar  . . . . . . . . .	 00000000	 Word
+  AsciiChar  . . . . . . . . . .	 00000000	 Byte
+  dwControlKeyState  . . . . . .	 0000000C	 DWord
+  dwMousePosition  . . . . . . .	 00000000	 DWord
+  dwButtonState  . . . . . . . .	 00000004	 DWord
+  dwMouseControlKeyState . . . .	 00000008	 DWord
+  dwEventFlags . . . . . . . . .	 0000000C	 DWord
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+  dwCommandId  . . . . . . . . .	 00000000	 DWord
+  bSetFocus  . . . . . . . . . .	 00000000	 DWord
+KEY_EVENT_RECORD . . . . . . . .	 00000010
+  bKeyDown . . . . . . . . . . .	 00000000	 DWord
+  wRepeatCount . . . . . . . . .	 00000004	 Word
+  wVirtualKeyCode  . . . . . . .	 00000006	 Word
+  wVirtualScanCode . . . . . . .	 00000008	 Word
+  uChar  . . . . . . . . . . . .	 0000000A	 Word
+  UnicodeChar  . . . . . . . . .	 00000000	 Word
+  AsciiChar  . . . . . . . . . .	 00000000	 Byte
+  dwControlKeyState  . . . . . .	 0000000C	 DWord
+MENU_EVENT_RECORD  . . . . . . .	 00000004
+  dwCommandId  . . . . . . . . .	 00000000	 DWord
+MOUSE_EVENT_RECORD . . . . . . .	 00000010
+  dwMousePosition  . . . . . . .	 00000000	 DWord
+  dwButtonState  . . . . . . . .	 00000004	 DWord
+  dwMouseControlKeyState . . . .	 00000008	 DWord
+  dwEventFlags . . . . . . . . .	 0000000C	 DWord
+SMALL_RECT . . . . . . . . . . .	 00000008
+  Left . . . . . . . . . . . . .	 00000000	 Word
+  Top  . . . . . . . . . . . . .	 00000002	 Word
+  Right  . . . . . . . . . . . .	 00000004	 Word
+  Bottom . . . . . . . . . . . .	 00000006	 Word
+SYSTEMTIME . . . . . . . . . . .	 00000010
+  wYear  . . . . . . . . . . . .	 00000000	 Word
+  wMonth . . . . . . . . . . . .	 00000002	 Word
+  wDayOfWeek . . . . . . . . . .	 00000004	 Word
+  wDay . . . . . . . . . . . . .	 00000006	 Word
+  wHour  . . . . . . . . . . . .	 00000008	 Word
+  wMinute  . . . . . . . . . . .	 0000000A	 Word
+  wSecond  . . . . . . . . . . .	 0000000C	 Word
+  wMilliseconds  . . . . . . . .	 0000000E	 Word
+WINDOW_BUFFER_SIZE_RECORD  . . .	 00000004
+  dwSize . . . . . . . . . . . .	 00000000	 DWord
+
+
+Segments and Groups:
+
+                N a m e                 Size     Length   Align   Combine Class
+
+FLAT . . . . . . . . . . . . . .	GROUP
+STACK  . . . . . . . . . . . . .	32 Bit	 00001000 Para	  Stack	  'STACK'	 
+_DATA  . . . . . . . . . . . . .	32 Bit	 0000293C Para	  Public  'DATA'	
+_TEXT  . . . . . . . . . . . . .	32 Bit	 00000B95 Para	  Public  'CODE'	
+
+
+Procedures, parameters, and locals:
+
+                N a m e                 Type     Value    Attr
+
+ATOI . . . . . . . . . . . . . .	P Near	 00000B2E _TEXT	Length= 00000026 Public STDCALL
+  NextDigit  . . . . . . . . . .	L Near	 00000B38 _TEXT	
+  getOut . . . . . . . . . . . .	L Near	 00000B53 _TEXT	
+BlankOut . . . . . . . . . . . .	P Near	 00000B6D _TEXT	Length= 0000000C Public STDCALL
+  blank  . . . . . . . . . . . .	L Near	 00000B6F _TEXT	
+CloseFile  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+CloseHandle  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Clrscr . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Col_LR . . . . . . . . . . . . .	P Near	 00000277 _TEXT	Length= 00000126 Public STDCALL
+  L00  . . . . . . . . . . . . .	L Near	 00000291 _TEXT	
+  L0 . . . . . . . . . . . . . .	L Near	 00000299 _TEXT	
+  L1 . . . . . . . . . . . . . .	L Near	 00000312 _TEXT	
+CreateFileA  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+CreateOutputFile . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Crlf . . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Delay  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Diagonal_DU_LR . . . . . . . . .	P Near	 00000620 _TEXT	Length= 00000172 Public STDCALL
+  M00  . . . . . . . . . . . . .	L Near	 00000654 _TEXT	
+  M0 . . . . . . . . . . . . . .	L Near	 0000065C _TEXT	
+  M1 . . . . . . . . . . . . . .	L Near	 000006F1 _TEXT	
+Diagonal_DU_RL . . . . . . . . .	P Near	 00000792 _TEXT	Length= 00000172 Public STDCALL
+  M00  . . . . . . . . . . . . .	L Near	 000007C6 _TEXT	
+  M0 . . . . . . . . . . . . . .	L Near	 000007CE _TEXT	
+  M1 . . . . . . . . . . . . . .	L Near	 00000863 _TEXT	
+Diagonal_UD_LR . . . . . . . . .	P Near	 000004CB _TEXT	Length= 00000155 Public STDCALL
+  L00  . . . . . . . . . . . . .	L Near	 000004E5 _TEXT	
+  L0 . . . . . . . . . . . . . .	L Near	 000004ED _TEXT	
+  L1 . . . . . . . . . . . . . .	L Near	 00000584 _TEXT	
+Diagonal_UD_RL . . . . . . . . .	P Near	 00000904 _TEXT	Length= 00000192 Public STDCALL
+  M00  . . . . . . . . . . . . .	L Near	 00000947 _TEXT	
+  M0 . . . . . . . . . . . . . .	L Near	 0000094F _TEXT	
+  M1 . . . . . . . . . . . . . .	L Near	 000009E4 _TEXT	
+DumpMem  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+DumpRegs . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ExitProcess  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+FileTimeToDosDateTime  . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+FileTimeToSystemTime . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+FillAry  . . . . . . . . . . . .	P Near	 00000AB8 _TEXT	Length= 00000030 Public STDCALL
+  L1 . . . . . . . . . . . . . .	L Near	 00000ABD _TEXT	
+  GoOn . . . . . . . . . . . . .	L Near	 00000AC3 _TEXT	
+  foundSpace . . . . . . . . . .	L Near	 00000ADB _TEXT	
+  foundCR  . . . . . . . . . . .	L Near	 00000ADE _TEXT	
+FlushConsoleInputBuffer  . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+FormatMessageA . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetCommandLineA  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetCommandTail . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleCP . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleCursorInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleMode . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetConsoleScreenBufferInfo . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetDateTime  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetFileTime  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetKeyState  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetLastError . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetLocalTime . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetMaxXY . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetMseconds  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetNumberOfConsoleInputEvents  .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetProcessHeap . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetStdHandle . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetSystemTime  . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetTextColor . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+GetTickCount . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Gotoxy . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapAlloc  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapCreate . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapDestroy  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapFree . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+HeapSize . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ITOA . . . . . . . . . . . . . .	P Near	 00000B54 _TEXT	Length= 00000019 Public STDCALL
+  NextDigit  . . . . . . . . . .	L Near	 00000B5A _TEXT	
+IsDigit  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+LocalFree  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+MessageBoxA  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+MsgBoxAsk  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+MsgBox . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+OpenInputFile  . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+OutputFileOpenSetup  . . . . . .	P Near	 00000AE8 _TEXT	Length= 00000011 Public STDCALL
+ParseDecimal32 . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ParseInteger32 . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+PeekConsoleInputA  . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+PrintResults . . . . . . . . . .	P Near	 00000078 _TEXT	Length= 000001B8 Public STDCALL
+PrintToFile  . . . . . . . . . .	P Near	 00000B79 _TEXT	Length= 0000001C Public STDCALL
+  next . . . . . . . . . . . . .	L Near	 00000B79 _TEXT	
+  outOfHere  . . . . . . . . . .	L Near	 00000B94 _TEXT	
+Print_Title  . . . . . . . . . .	P Near	 00000A96 _TEXT	Length= 00000022 Public STDCALL
+Random32 . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+RandomRange  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Randomize  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadChar . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadConsoleA . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadConsoleInputA  . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadDec  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadFileIntoBuffer . . . . . . .	P Near	 00000AF9 _TEXT	Length= 00000035 Public STDCALL
+ReadFile . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadFloat  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadFromFile . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadHex  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadInt  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadKeyFlush . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadKey  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ReadString . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Reset_ShiftValues  . . . . . . .	P Near	 00000230 _TEXT	Length= 00000047 Public STDCALL
+Row_LR . . . . . . . . . . . . .	P Near	 0000039D _TEXT	Length= 0000012E Public STDCALL
+  L00  . . . . . . . . . . . . .	L Near	 000003BE _TEXT	
+  L0 . . . . . . . . . . . . . .	L Near	 000003C6 _TEXT	
+  L1 . . . . . . . . . . . . . .	L Near	 0000043F _TEXT	
+SetConsoleCursorInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleCursorPosition . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleMode . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleScreenBufferSize . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleTextAttribute  . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleTitleA . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetConsoleWindowInfo . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetFilePointer . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetLocalTime . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SetTextColor . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+ShowFPUStack . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Sleep  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+StrLength  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_compare  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_copy . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_length . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_trim . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+Str_ucase  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+SystemTimeToFileTime . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WaitMsg  . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteBinB  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteBin . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteChar  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteConsoleA  . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteConsoleOutputAttribute  . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteConsoleOutputCharacterA . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteDec . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteFile  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteFloat . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteHexB  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteHex . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteInt . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteStackFrameName  . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteStackFrame  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteString  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteToFile  . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+WriteWindowsMsg  . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External STDCALL
+main . . . . . . . . . . . . . .	P Near	 00000000 _TEXT	Length= 00000078 Public STDCALL
+printf . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+scanf  . . . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+wsprintfA  . . . . . . . . . . .	P Near	 00000000 FLAT	Length= 00000000 External C
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+@CodeSize  . . . . . . . . . . .	Number	 00000000h   
+@DataSize  . . . . . . . . . . .	Number	 00000000h   
+@Interface . . . . . . . . . . .	Number	 00000003h   
+@Model . . . . . . . . . . . . .	Number	 00000007h   
+@code  . . . . . . . . . . . . .	Text   	 _TEXT
+@data  . . . . . . . . . . . . .	Text   	 FLAT
+@fardata?  . . . . . . . . . . .	Text   	 FLAT
+@fardata . . . . . . . . . . . .	Text   	 FLAT
+@stack . . . . . . . . . . . . .	Text   	 FLAT
+ALT_MASK . . . . . . . . . . . .	Number	 00000003h   
+Ary1 . . . . . . . . . . . . . .	DWord	 00001944 _DATA	
+BUFF . . . . . . . . . . . . . .	Byte	 000001D2 _DATA	
+BestSum  . . . . . . . . . . . .	DWord	 000028F0 _DATA	
+CAPSLOCK_ON  . . . . . . . . . .	Number	 00000080h   
+CMsg . . . . . . . . . . . . . .	Byte	 000001B4 _DATA	
+COL  . . . . . . . . . . . . . .	DWord	 00002910 _DATA	
+CREATE_ALWAYS  . . . . . . . . .	Number	 00000002h   
+CREATE_NEW . . . . . . . . . . .	Number	 00000001h   
+CR . . . . . . . . . . . . . . .	Number	 0000000Dh   
+CTRL_MASK  . . . . . . . . . . .	Number	 0000000Ch   
+CreateFile . . . . . . . . . . .	Text   	 CreateFileA
+DO_NOT_SHARE . . . . . . . . . .	Number	 00000000h   
+ENABLE_ECHO_INPUT  . . . . . . .	Number	 00000004h   
+ENABLE_LINE_INPUT  . . . . . . .	Number	 00000002h   
+ENABLE_MOUSE_INPUT . . . . . . .	Number	 00000010h   
+ENABLE_PROCESSED_INPUT . . . . .	Number	 00000001h   
+ENABLE_PROCESSED_OUTPUT  . . . .	Number	 00000001h   
+ENABLE_WINDOW_INPUT  . . . . . .	Number	 00000008h   
+ENABLE_WRAP_AT_EOL_OUTPUT  . . .	Number	 00000002h   
+ENHANCED_KEY . . . . . . . . . .	Number	 00000100h   
+FALSE  . . . . . . . . . . . . .	Number	 00000000h   
+FILE_APPEND_DATA . . . . . . . .	Number	 00000004h   
+FILE_ATTRIBUTE_ARCHIVE . . . . .	Number	 00000020h   
+FILE_ATTRIBUTE_COMPRESSED  . . .	Number	 00000800h   
+FILE_ATTRIBUTE_DEVICE  . . . . .	Number	 00000040h   
+FILE_ATTRIBUTE_DIRECTORY . . . .	Number	 00000010h   
+FILE_ATTRIBUTE_ENCRYPTED . . . .	Number	 00004000h   
+FILE_ATTRIBUTE_HIDDEN  . . . . .	Number	 00000002h   
+FILE_ATTRIBUTE_NORMAL  . . . . .	Number	 00000080h   
+FILE_ATTRIBUTE_NOT_CONTENT_INDEXED .	Number	 00002000h   
+FILE_ATTRIBUTE_OFFLINE . . . . .	Number	 00001000h   
+FILE_ATTRIBUTE_READONLY  . . . .	Number	 00000001h   
+FILE_ATTRIBUTE_REPARSE_POINT . .	Number	 00000400h   
+FILE_ATTRIBUTE_SPARSE_FILE . . .	Number	 00000200h   
+FILE_ATTRIBUTE_SYSTEM  . . . . .	Number	 00000004h   
+FILE_ATTRIBUTE_TEMPORARY . . . .	Number	 00000100h   
+FILE_BEGIN . . . . . . . . . . .	Number	 00000000h   
+FILE_CURRENT . . . . . . . . . .	Number	 00000001h   
+FILE_DELETE_CHILD  . . . . . . .	Number	 00000040h   
+FILE_END . . . . . . . . . . . .	Number	 00000002h   
+FILE_READ_DATA . . . . . . . . .	Number	 00000001h   
+FILE_SHARE_DELETE  . . . . . . .	Number	 00000004h   
+FILE_SHARE_READ  . . . . . . . .	Number	 00000001h   
+FILE_SHARE_WRITE . . . . . . . .	Number	 00000002h   
+FILE_WRITE_DATA  . . . . . . . .	Number	 00000002h   
+FOCUS_EVENT  . . . . . . . . . .	Number	 00000010h   
+FORMAT_MESSAGE_ALLOCATE_BUFFER .	Number	 00000100h   
+FORMAT_MESSAGE_FROM_SYSTEM . . .	Number	 00001000h   
+FormatMessage  . . . . . . . . .	Text   	 FormatMessageA
+GENERIC_ALL  . . . . . . . . . .	Number	 10000000h   
+GENERIC_EXECUTE  . . . . . . . .	Number	 20000000h   
+GENERIC_READ . . . . . . . . . .	Number	 -80000000h   
+GENERIC_WRITE  . . . . . . . . .	Number	 40000000h   
+GetCommandLine . . . . . . . . .	Text   	 GetCommandLineA
+HANDLE . . . . . . . . . . . . .	Text   	 DWORD
+HEAP_GENERATE_EXCEPTIONS . . . .	Number	 00000004h   
+HEAP_GROWABLE  . . . . . . . . .	Number	 00000002h   
+HEAP_NO_SERIALIZE  . . . . . . .	Number	 00000001h   
+HEAP_REALLOC_IN_PLACE_ONLY . . .	Number	 00000010h   
+HEAP_ZERO_MEMORY . . . . . . . .	Number	 00000008h   
+IDABORT  . . . . . . . . . . . .	Number	 00000003h   
+IDCANCEL . . . . . . . . . . . .	Number	 00000002h   
+IDCLOSE  . . . . . . . . . . . .	Number	 00000008h   
+IDCONTINUE . . . . . . . . . . .	Number	 0000000Bh   
+IDHELP . . . . . . . . . . . . .	Number	 00000009h   
+IDIGNORE . . . . . . . . . . . .	Number	 00000005h   
+IDNO . . . . . . . . . . . . . .	Number	 00000007h   
+IDOK . . . . . . . . . . . . . .	Number	 00000001h   
+IDRETRY  . . . . . . . . . . . .	Number	 00000004h   
+IDTIMEOUT  . . . . . . . . . . .	Number	 00007D00h   
+IDTRYAGAIN . . . . . . . . . . .	Number	 0000000Ah   
+IDYES  . . . . . . . . . . . . .	Number	 00000006h   
+INVALID_HANDLE_VALUE . . . . . .	Number	 -00000001h   
+KBDOWN_FLAG  . . . . . . . . . .	Number	 00000001h   
+KEY_EVENT  . . . . . . . . . . .	Number	 00000001h   
+KEY_MASKS  . . . . . . . . . . .	Number	 0000001Fh   
+LEFT_ALT_PRESSED . . . . . . . .	Number	 00000002h   
+LEFT_CTRL_PRESSED  . . . . . . .	Number	 00000008h   
+LF . . . . . . . . . . . . . . .	Number	 0000000Ah   
+MB_ABORTRETRYIGNORE  . . . . . .	Number	 00000002h   
+MB_APPLMODAL . . . . . . . . . .	Number	 00000000h   
+MB_CANCELTRYCONTINUE . . . . . .	Number	 00000006h   
+MB_DEFBUTTON1  . . . . . . . . .	Number	 00000000h   
+MB_DEFBUTTON2  . . . . . . . . .	Number	 00000100h   
+MB_DEFBUTTON3  . . . . . . . . .	Number	 00000200h   
+MB_DEFBUTTON4  . . . . . . . . .	Number	 00000300h   
+MB_HELP  . . . . . . . . . . . .	Number	 00004000h   
+MB_ICONASTERISK  . . . . . . . .	Number	 00000040h   
+MB_ICONERROR . . . . . . . . . .	Number	 00000010h   
+MB_ICONEXCLAMATION . . . . . . .	Number	 00000030h   
+MB_ICONHAND  . . . . . . . . . .	Number	 00000010h   
+MB_ICONINFORMATION . . . . . . .	Number	 00000040h   
+MB_ICONQUESTION  . . . . . . . .	Number	 00000020h   
+MB_ICONSTOP  . . . . . . . . . .	Number	 00000010h   
+MB_ICONWARNING . . . . . . . . .	Number	 00000030h   
+MB_OKCANCEL  . . . . . . . . . .	Number	 00000001h   
+MB_OK  . . . . . . . . . . . . .	Number	 00000000h   
+MB_RETRYCANCEL . . . . . . . . .	Number	 00000005h   
+MB_SYSTEMMODAL . . . . . . . . .	Number	 00001000h   
+MB_TASKMODAL . . . . . . . . . .	Number	 00002000h   
+MB_USERICON  . . . . . . . . . .	Number	 00000080h   
+MB_YESNOCANCEL . . . . . . . . .	Number	 00000003h   
+MB_YESNO . . . . . . . . . . . .	Number	 00000004h   
+MENU_EVENT . . . . . . . . . . .	Number	 00000008h   
+MOUSE_EVENT  . . . . . . . . . .	Number	 00000002h   
+MessageBox . . . . . . . . . . .	Text   	 MessageBoxA
+Msg0 . . . . . . . . . . . . . .	Byte	 00000077 _DATA	
+MsgV2  . . . . . . . . . . . . .	Byte	 000000BA _DATA	
+MsgV3  . . . . . . . . . . . . .	Byte	 000000FB _DATA	
+NULL . . . . . . . . . . . . . .	Number	 00000000h   
+NUMLOCK_ON . . . . . . . . . . .	Number	 00000020h   
+NumMsg1  . . . . . . . . . . . .	Byte	 00000165 _DATA	
+NumMsg2  . . . . . . . . . . . .	Byte	 0000017C _DATA	
+OPEN_ALWAYS  . . . . . . . . . .	Number	 00000004h   
+OPEN_EXISTING  . . . . . . . . .	Number	 00000003h   
+PeekConsoleInput . . . . . . . .	Text   	 PeekConsoleInputA
+RIGHT_ALT_PRESSED  . . . . . . .	Number	 00000001h   
+RIGHT_CTRL_PRESSED . . . . . . .	Number	 00000004h   
+RMsg . . . . . . . . . . . . . .	Byte	 000001A2 _DATA	
+ROW  . . . . . . . . . . . . . .	DWord	 0000290C _DATA	
+ReadConsoleInput . . . . . . . .	Text   	 ReadConsoleInputA
+ReadConsole  . . . . . . . . . .	Text   	 ReadConsoleA
+SCROLLLOCK_ON  . . . . . . . . .	Number	 00000040h   
+SHIFT_MASK . . . . . . . . . . .	Number	 00000010h   
+SHIFT_PRESSED  . . . . . . . . .	Number	 00000010h   
+SPC  . . . . . . . . . . . . . .	Number	 00000020h   
+STD_ERROR_HANDLE . . . . . . . .	Number	 -0000000Ch   
+STD_INPUT_HANDLE . . . . . . . .	Number	 -0000000Ah   
+STD_OUTPUT_HANDLE  . . . . . . .	Number	 -0000000Bh   
+SetConsoleTitle  . . . . . . . .	Text   	 SetConsoleTitleA
+SumMsg1  . . . . . . . . . . . .	Byte	 0000013C _DATA	
+TAB  . . . . . . . . . . . . . .	Number	 00000009h   
+TEN  . . . . . . . . . . . . . .	DWord	 00000000 _DATA	
+TRUE . . . . . . . . . . . . . .	Number	 00000001h   
+TRUNCATE_EXISTING  . . . . . . .	Number	 00000005h   
+TWO  . . . . . . . . . . . . . .	DWord	 00000004 _DATA	
+VK_11  . . . . . . . . . . . . .	Number	 000000BDh   
+VK_12  . . . . . . . . . . . . .	Number	 000000BBh   
+VK_ADD . . . . . . . . . . . . .	Number	 0000006Bh   
+VK_BACK  . . . . . . . . . . . .	Number	 00000008h   
+VK_CANCEL  . . . . . . . . . . .	Number	 00000003h   
+VK_CAPITAL . . . . . . . . . . .	Number	 00000014h   
+VK_CLEAR . . . . . . . . . . . .	Number	 0000000Ch   
+VK_CONTROL . . . . . . . . . . .	Number	 00000011h   
+VK_DECIMAL . . . . . . . . . . .	Number	 0000006Eh   
+VK_DELETE  . . . . . . . . . . .	Number	 0000002Eh   
+VK_DIVIDE  . . . . . . . . . . .	Number	 0000006Fh   
+VK_DOWN  . . . . . . . . . . . .	Number	 00000028h   
+VK_END . . . . . . . . . . . . .	Number	 00000023h   
+VK_ESCAPE  . . . . . . . . . . .	Number	 0000001Bh   
+VK_EXECUTE . . . . . . . . . . .	Number	 0000002Bh   
+VK_F10 . . . . . . . . . . . . .	Number	 00000079h   
+VK_F11 . . . . . . . . . . . . .	Number	 0000007Ah   
+VK_F12 . . . . . . . . . . . . .	Number	 0000007Bh   
+VK_F13 . . . . . . . . . . . . .	Number	 0000007Ch   
+VK_F14 . . . . . . . . . . . . .	Number	 0000007Dh   
+VK_F15 . . . . . . . . . . . . .	Number	 0000007Eh   
+VK_F16 . . . . . . . . . . . . .	Number	 0000007Fh   
+VK_F17 . . . . . . . . . . . . .	Number	 00000080h   
+VK_F18 . . . . . . . . . . . . .	Number	 00000081h   
+VK_F19 . . . . . . . . . . . . .	Number	 00000082h   
+VK_F1  . . . . . . . . . . . . .	Number	 00000070h   
+VK_F20 . . . . . . . . . . . . .	Number	 00000083h   
+VK_F21 . . . . . . . . . . . . .	Number	 00000084h   
+VK_F22 . . . . . . . . . . . . .	Number	 00000085h   
+VK_F23 . . . . . . . . . . . . .	Number	 00000086h   
+VK_F24 . . . . . . . . . . . . .	Number	 00000087h   
+VK_F2  . . . . . . . . . . . . .	Number	 00000071h   
+VK_F3  . . . . . . . . . . . . .	Number	 00000072h   
+VK_F4  . . . . . . . . . . . . .	Number	 00000073h   
+VK_F5  . . . . . . . . . . . . .	Number	 00000074h   
+VK_F6  . . . . . . . . . . . . .	Number	 00000075h   
+VK_F7  . . . . . . . . . . . . .	Number	 00000076h   
+VK_F8  . . . . . . . . . . . . .	Number	 00000077h   
+VK_F9  . . . . . . . . . . . . .	Number	 00000078h   
+VK_HELP  . . . . . . . . . . . .	Number	 0000002Fh   
+VK_HOME  . . . . . . . . . . . .	Number	 00000024h   
+VK_INSERT  . . . . . . . . . . .	Number	 0000002Dh   
+VK_LBUTTON . . . . . . . . . . .	Number	 00000001h   
+VK_LCONTROL  . . . . . . . . . .	Number	 000000A2h   
+VK_LEFT  . . . . . . . . . . . .	Number	 00000025h   
+VK_LMENU . . . . . . . . . . . .	Number	 000000A4h   
+VK_LSHIFT  . . . . . . . . . . .	Number	 000000A0h   
+VK_MENU  . . . . . . . . . . . .	Number	 00000012h   
+VK_MULTIPLY  . . . . . . . . . .	Number	 0000006Ah   
+VK_NEXT  . . . . . . . . . . . .	Number	 00000022h   
+VK_NUMLOCK . . . . . . . . . . .	Number	 00000090h   
+VK_NUMPAD0 . . . . . . . . . . .	Number	 00000060h   
+VK_NUMPAD1 . . . . . . . . . . .	Number	 00000061h   
+VK_NUMPAD2 . . . . . . . . . . .	Number	 00000062h   
+VK_NUMPAD3 . . . . . . . . . . .	Number	 00000063h   
+VK_NUMPAD4 . . . . . . . . . . .	Number	 00000064h   
+VK_NUMPAD5 . . . . . . . . . . .	Number	 00000065h   
+VK_NUMPAD6 . . . . . . . . . . .	Number	 00000066h   
+VK_NUMPAD7 . . . . . . . . . . .	Number	 00000067h   
+VK_NUMPAD8 . . . . . . . . . . .	Number	 00000068h   
+VK_NUMPAD9 . . . . . . . . . . .	Number	 00000069h   
+VK_PAUSE . . . . . . . . . . . .	Number	 00000013h   
+VK_PRINT . . . . . . . . . . . .	Number	 0000002Ah   
+VK_PRIOR . . . . . . . . . . . .	Number	 00000021h   
+VK_RBUTTON . . . . . . . . . . .	Number	 00000002h   
+VK_RCONTROL  . . . . . . . . . .	Number	 000000A3h   
+VK_RETURN  . . . . . . . . . . .	Number	 0000000Dh   
+VK_RIGHT . . . . . . . . . . . .	Number	 00000027h   
+VK_RMENU . . . . . . . . . . . .	Number	 000000A5h   
+VK_RSHIFT  . . . . . . . . . . .	Number	 000000A1h   
+VK_SCROLL  . . . . . . . . . . .	Number	 00000091h   
+VK_SEPARATER . . . . . . . . . .	Number	 0000006Ch   
+VK_SHIFT . . . . . . . . . . . .	Number	 00000010h   
+VK_SNAPSHOT  . . . . . . . . . .	Number	 0000002Ch   
+VK_SPACE . . . . . . . . . . . .	Number	 00000020h   
+VK_SUBTRACT  . . . . . . . . . .	Number	 0000006Dh   
+VK_TAB . . . . . . . . . . . . .	Number	 00000009h   
+VK_UP  . . . . . . . . . . . . .	Number	 00000026h   
+WINDOW_BUFFER_SIZE_EVENT . . . .	Number	 00000004h   
+WriteConsoleOutputCharacter  . .	Text   	 WriteConsoleOutputCharacterA
+WriteConsole . . . . . . . . . .	Text   	 WriteConsoleA
+bestStr  . . . . . . . . . . . .	Byte	 000001BD _DATA	
+blRow  . . . . . . . . . . . . .	DWord	 00002924 _DATA	
+black  . . . . . . . . . . . . .	Number	 00000000h   
+blue . . . . . . . . . . . . . .	Number	 00000001h   
+brRow  . . . . . . . . . . . . .	DWord	 00002928 _DATA	
+brown  . . . . . . . . . . . . .	Number	 00000006h   
+byteCount  . . . . . . . . . . .	DWord	 000028E8 _DATA	
+cLimit . . . . . . . . . . . . .	DWord	 0000291C _DATA	
+c_ctr  . . . . . . . . . . . . .	DWord	 00002918 _DATA	
+colonStr . . . . . . . . . . . .	Byte	 000001CE _DATA	
+commaStr . . . . . . . . . . . .	Byte	 000001CC _DATA	
+ctr  . . . . . . . . . . . . . .	DWord	 00002908 _DATA	
+cyan . . . . . . . . . . . . . .	Number	 00000003h   
+dLimit . . . . . . . . . . . . .	DWord	 00002920 _DATA	
+exit . . . . . . . . . . . . . .	Text   	 INVOKE ExitProcess,0
+fline  . . . . . . . . . . . . .	Byte	 00000033 _DATA	
+gray . . . . . . . . . . . . . .	Number	 00000008h   
+green  . . . . . . . . . . . . .	Number	 00000002h   
+inFN . . . . . . . . . . . . . .	Byte	 0000001E _DATA	
+infile . . . . . . . . . . . . .	DWord	 0000002B _DATA	
+lightBlue  . . . . . . . . . . .	Number	 00000009h   
+lightCyan  . . . . . . . . . . .	Number	 0000000Bh   
+lightGray  . . . . . . . . . . .	Number	 00000007h   
+lightGreen . . . . . . . . . . .	Number	 0000000Ah   
+lightMagenta . . . . . . . . . .	Number	 0000000Dh   
+lightRed . . . . . . . . . . . .	Number	 0000000Ch   
+magenta  . . . . . . . . . . . .	Number	 00000005h   
+nCol . . . . . . . . . . . . . .	DWord	 000028FC _DATA	
+nPos . . . . . . . . . . . . . .	DWord	 00002900 _DATA	
+nRow . . . . . . . . . . . . . .	DWord	 00002904 _DATA	
+nline  . . . . . . . . . . . . .	Byte	 000001C6 _DATA	
+numA . . . . . . . . . . . . . .	DWord	 0000292C _DATA	
+numB . . . . . . . . . . . . . .	DWord	 00002930 _DATA	
+numC . . . . . . . . . . . . . .	DWord	 00002934 _DATA	
+numD . . . . . . . . . . . . . .	DWord	 00002938 _DATA	
+numStr . . . . . . . . . . . . .	Byte	 000001C9 _DATA	
+outFN  . . . . . . . . . . . . .	Byte	 00000008 _DATA	
+outfile  . . . . . . . . . . . .	DWord	 0000002F _DATA	
+r_ctr  . . . . . . . . . . . . .	DWord	 00002914 _DATA	
+red  . . . . . . . . . . . . . .	Number	 00000004h   
+sCol . . . . . . . . . . . . . .	DWord	 000028F8 _DATA	
+sRow . . . . . . . . . . . . . .	DWord	 000028F4 _DATA	
+valCtr . . . . . . . . . . . . .	DWord	 000028EC _DATA	
+white  . . . . . . . . . . . . .	Number	 0000000Fh   
+wsprintf . . . . . . . . . . . .	Text   	 wsprintfA
+yellow . . . . . . . . . . . . .	Number	 0000000Eh   
+
+	   0 Warnings
+	   0 Errors

@@ -1,0 +1,9 @@
+=================================================================
+Largest Product of Four Numbers Program Created by: BRETT DAHMER
+=================================================================
+This was calculated using MatrixV2.dat (used [0,0] to [19,19])
+=================================================================
+The Largest Product of Four Numbers is: 64128416
+The four numbers are: 88,89,92,89
+At Location (row  7,column  4): 89
+=================================================================
