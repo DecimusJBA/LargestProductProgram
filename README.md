@@ -5,5 +5,5 @@ This program finds the largest product by checking the 2d array of numbers from 
 By default the program is setup to run the MatrixV2.dat file in order to update it to run the MatrixV3.dat file
 Line 22 (outFN which is output file name) and Line 23 (inFN input file name) will need to be changed prior to running the program. This will allow for the read in of a different input file and output the results to a different output file.
 
-For debug and understanding of how this program works, I created an excel spreadsheet to help visualize the offsets of a 2D array because assembly stores data in memory in a linear fashion (1D array).
+For debug and understanding of how this program works, I created an excel spreadsheet(s) to help visualize the offsets of a 2D array because assembly stores data in memory in a linear fashion (1D array). The spreadsheets are MatrixV2 and MatrixV3 in different sheets within the workbook.
 
